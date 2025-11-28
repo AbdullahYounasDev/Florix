@@ -1,9 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 
 export default function TabLayout() {
   return (
+    <>
+    <StatusBar style='dark'/>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#5D8A6F',
@@ -30,22 +33,18 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? "leaf" : "leaf-outline"} 
-              size={24} 
+              size={focused ? 24 : 18} 
               color={color} 
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="chat-ai"
+        name="florix-bot"
         options={{
-          title: 'Leaf Bot',
+          title: 'Florix Bot',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name={focused ? "medical" : "medical-outline"} 
-              size={24} 
-              color={color} 
-            />
+            <MaterialIcons name="smart-toy" size={focused ? 24 : 18} color={color} />
           ),
         }}
       />
@@ -56,12 +55,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? "person" : "person-outline"} 
-              size={24} 
+              size={focused ? 24 : 18} 
               color={color} 
             />
           ),
         }}
       />
     </Tabs>
+    </>
   );
 }

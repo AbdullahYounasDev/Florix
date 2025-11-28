@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 35, // for status bar / Safe Area
+    paddingTop: 45, // for status bar / Safe Area
     paddingBottom: 7,
     backgroundColor: "#FAFAFA",
   },

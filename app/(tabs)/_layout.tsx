@@ -1,12 +1,10 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 
 export default function TabLayout() {
   return (
     <>
-    <StatusBar style='dark'/>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#5D8A6F',
@@ -55,6 +53,19 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? "person" : "person-outline"} 
+              size={focused ? 24 : 18} 
+              color={color} 
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="debug"
+        options={{
+          title: 'Developer',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name={focused ? "bug" : "bug-outline"} 
               size={focused ? 24 : 18} 
               color={color} 
             />

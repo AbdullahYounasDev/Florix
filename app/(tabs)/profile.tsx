@@ -1,243 +1,340 @@
-import PlantSection from '@/components/ui/HomeScreen/PlantSection';
-import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
+  Alert,
+  Linking,
+  Modal,
   ScrollView,
+  Share,
   StyleSheet,
-  Switch,
   Text,
+  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
 
 export default function ProfileScreen() {
-  const [notifications, setNotifications] = useState({
-    diseaseAlerts: true,
-    weatherUpdates: true,
-    cropNews: false,
-    marketPrices: true,
-  });
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [rating, setRating] = useState(0);
 
-  // Mock user data
+  // Mock user data - will come from backend
   const userData = {
     name: 'Ali Farmer',
-    address: '123 Farm Street, Agricultural Zone, Lahore, Pakistan',
     email: 'ali.farmer@example.com',
+    mobile: '+92 300 1234567',
+    address: '123 Farm Street, Agricultural Zone, Lahore, Pakistan',
     joinDate: 'January 2024',
   };
 
-  // Mock recent activities
-  const recentActivities = [
-    {
-      id: '1',
-      type: 'chat',
-      title: 'AI Chat about Tomato Blight',
-      description: 'Asked about treatment options',
-      timestamp: '2 hours ago',
-      icon: 'chatbubble-outline',
-    },
-    {
-      id: '2',
-      type: 'scan',
-      title: 'Plant Disease Scan',
-      description: 'Uploaded tomato leaf for analysis',
-      timestamp: '1 day ago',
-      icon: 'camera-outline',
-    },
-    {
-      id: '3',
-      type: 'crop',
-      title: 'Added New Crop',
-      description: 'Added Wheat to your plants',
-      timestamp: '2 days ago',
-      icon: 'leaf-outline',
-    },
-    {
-      id: '4',
-      type: 'weather',
-      title: 'Weather Check',
-      description: 'Checked weather recommendations',
-      timestamp: '3 days ago',
-      icon: 'partly-sunny-outline',
-    },
-  ];
+  const shareApp = async () => {
+    try {
+      const shareMessage = `🌱 Discover Florix - Your Smart Farming Assistant! 🚜\n\nJoin me in using Florix to get:\n• Plant disease detection\n• AI farming advice\n• Weather updates\n• Market prices\n\nDownload now: https://play.google.com/store/apps/details?id=com.florix.app`;
 
-  // Mock selected plants
-  const selectedPlants = ['Tomato', 'Wheat', 'Rice', 'Corn'];
+      const shareOptions = {
+        message: shareMessage,
+        title: 'Share Florix App',
+        url: 'https://play.google.com/store/apps/details?id=com.florix.app', // For iOS
+      };
 
-  const toggleNotification = (type: keyof typeof notifications) => {
-    setNotifications(prev => ({
-      ...prev,
-      [type]: !prev[type]
-    }));
+      const result = await Share.share(shareOptions);
+      
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // Shared with specific activity type (WhatsApp, etc.)
+          console.log('Shared with', result.activityType);
+        } else {
+          // Shared generally
+          console.log('Shared');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // Dismissed
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to share app');
+    }
   };
 
-  const getActivityIcon = (iconName: any) => {
-    return <Ionicons name={iconName} size={20} color="#5D8A6F" />;
+  const shareToWhatsApp = async () => {
+    try {
+      const message = `🌱 Discover Florix - Your Smart Farming Assistant! 🚜\n\nJoin me in using Florix to get:\n• Plant disease detection\n• AI farming advice\n• Weather updates\n• Market prices\n\nDownload now: https://play.google.com/store/apps/details?id=com.florix.app`;
+      
+      const url = `whatsapp://send?text=${encodeURIComponent(message)}`;
+      
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        // If WhatsApp is not installed, open regular share
+        await Share.share({
+          message: message,
+          title: 'Share Florix on WhatsApp',
+        });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'WhatsApp is not installed or failed to open');
+    }
+  };
+
+  const shareToMessenger = async () => {
+    try {
+      const message = `🌱 Discover Florix - Your Smart Farming Assistant! 🚜\n\nJoin me in using Florix to get:\n• Plant disease detection\n• AI farming advice\n• Weather updates\n• Market prices\n\nDownload now: https://play.google.com/store/apps/details?id=com.florix.app`;
+      
+      // For Facebook Messenger
+      const url = `fb-messenger://share?link=${encodeURIComponent('https://play.google.com/store/apps/details?id=com.florix.app')}&app_id=123456789`; // Replace with actual app ID if available
+      
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        await Share.share({
+          message: message,
+          title: 'Share Florix on Messenger',
+        });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Messenger is not installed or failed to open');
+    }
+  };
+
+  const openShareOptions = () => {
+    Alert.alert(
+      'Share Florix',
+      'Choose how you want to share the app:',
+      [
+        {
+          text: 'WhatsApp',
+          onPress: shareToWhatsApp
+        },
+        {
+          text: 'Messenger',
+          onPress: shareToMessenger
+        },
+        {
+          text: 'Other Apps',
+          onPress: shareApp
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const submitFeedback = () => {
+    if (feedback.trim() === '') {
+      Alert.alert('Error', 'Please enter your feedback');
+      return;
+    }
+
+    // Here you would send feedback to backend
+    console.log('Feedback submitted:', { feedback, rating });
+    Alert.alert('Thank You!', 'Your feedback has been submitted successfully.');
+    setFeedback('');
+    setRating(0);
+    setFeedbackModalVisible(false);
+  };
+
+  const renderStars = () => {
+    return (
+      <View style={styles.starsContainer}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <TouchableOpacity
+            key={star}
+            onPress={() => setRating(star)}
+            style={styles.starButton}
+          >
+            <Ionicons
+              name={star <= rating ? "star" : "star-outline"}
+              size={28}
+              color={star <= rating ? "#FFA500" : "#A1887F"}
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header with Profile Info */}
-      <View style={styles.profileHeader}>
-        <View style={styles.avatarContainer}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {userData.name.split(' ').map(n => n[0]).join('')}
-            </Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Profile</Text>
+      </View>
+
+      {/* Section 1: User Details */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Personal Information</Text>
+        
+        <View style={styles.detailItem}>
+          <View style={styles.detailIcon}>
+            <Ionicons name="person-outline" size={20} color="#5D8A6F" />
+          </View>
+          <View style={styles.detailContent}>
+            <Text style={styles.detailLabel}>Full Name</Text>
+            <Text style={styles.detailValue}>{userData.name}</Text>
           </View>
           <TouchableOpacity style={styles.editButton}>
-            <Ionicons name="camera-outline" size={16} color="#5D8A6F" />
+            <Text style={styles.editText}>Edit</Text>
           </TouchableOpacity>
         </View>
-        
-        <Text style={styles.userName}>{userData.name}</Text>
-        <Text style={styles.userEmail}>{userData.email}</Text>
-        
-        <View style={styles.addressContainer}>
-          <Text style={styles.userAddress}>{userData.address}</Text>
+
+        <View style={styles.detailItem}>
+          <View style={styles.detailIcon}>
+            <Ionicons name="mail-outline" size={20} color="#5D8A6F" />
+          </View>
+          <View style={styles.detailContent}>
+            <Text style={styles.detailLabel}>Email Address</Text>
+            <Text style={styles.detailValue}>{userData.email}</Text>
+          </View>
         </View>
-        
-        <Text style={styles.joinDate}>Member since {userData.joinDate}</Text>
-      </View>
 
-      {/* Selected Plants Section */}
-        
-        <PlantSection />
-
-      {/* Recent Activity Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAllText}>See All</Text>
+        <View style={styles.detailItem}>
+          <View style={styles.detailIcon}>
+            <Ionicons name="call-outline" size={20} color="#5D8A6F" />
+          </View>
+          <View style={styles.detailContent}>
+            <Text style={styles.detailLabel}>Mobile Number</Text>
+            <Text style={styles.detailValue}>{userData.mobile}</Text>
+          </View>
+          <TouchableOpacity style={styles.editButton}>
+            <Text style={styles.editText}>Edit</Text>
           </TouchableOpacity>
         </View>
-        
-        <View style={styles.activitiesList}>
-          {recentActivities.map(activity => (
-            <View key={activity.id} style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                {getActivityIcon(activity.icon)}
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>{activity.title}</Text>
-                <Text style={styles.activityDescription}>{activity.description}</Text>
-                <Text style={styles.activityTime}>{activity.timestamp}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="#A1887F" />
-            </View>
-          ))}
+
+        <View style={styles.detailItem}>
+          <View style={styles.detailIcon}>
+            <Ionicons name="location-outline" size={20} color="#5D8A6F" />
+          </View>
+          <View style={styles.detailContent}>
+            <Text style={styles.detailLabel}>Farm Address</Text>
+            <Text style={styles.detailValue}>{userData.address}</Text>
+          </View>
+          <TouchableOpacity style={styles.editButton}>
+            <Text style={styles.editText}>Edit</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.detailItem}>
+          <View style={styles.detailIcon}>
+            <Ionicons name="calendar-outline" size={20} color="#5D8A6F" />
+          </View>
+          <View style={styles.detailContent}>
+            <Text style={styles.detailLabel}>Member Since</Text>
+            <Text style={styles.detailValue}>{userData.joinDate}</Text>
+          </View>
         </View>
       </View>
 
-      {/* Notifications Settings */}
+      {/* Section 2: Share App */}
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-          <Text style={styles.sectionSubtitle}>Stay updated with your crops</Text>
+        <View style={styles.shareContainer}>
+          <View style={styles.shareIconContainer}>
+            <Ionicons name="share-social" size={32} color="#FFFFFF" />
+          </View>
+          <View style={styles.shareContent}>
+            <Text style={styles.shareTitle}>Share the Green Revolution!</Text>
+            <Text style={styles.shareDescription}>
+              Help other farmers discover Florix and transform their farming experience
+            </Text>
+          </View>
+          {/* Quick Share */}
+          <View style={styles.quickShareContainer}>
+          <Text style={styles.quickShareTitle}>Share via</Text>
+          <View style={styles.quickShareButtons}>
+            <TouchableOpacity style={styles.quickShareButton} onPress={shareToWhatsApp}>
+              <FontAwesome name="whatsapp" size={24} color="#25D366" />
+              <Text style={styles.quickShareText}>WhatsApp</Text>
+            </TouchableOpacity>            
+            <TouchableOpacity style={styles.quickShareButton} onPress={shareApp}>
+              <Ionicons name="share-outline" size={24} color="#5D8A6F" />
+              <Text style={styles.quickShareText}>Other Apps</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+        </View>        
+      </View>
+
+      {/* Section 3: Feedback */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>We Value Your Feedback</Text>
+        <Text style={styles.feedbackDescription}>
+          Your suggestions help us improve Florix and serve you better
+        </Text>
         
-        <View style={styles.notificationsList}>
-          <View style={styles.notificationItem}>
-            <View style={styles.notificationInfo}>
-              <View style={[styles.notificationIcon, { backgroundColor: '#E8F5E8' }]}>
-                <MaterialIcons name="warning" size={20} color="#5D8A6F" />
-              </View>
-              <View style={styles.notificationText}>
-                <Text style={styles.notificationTitle}>Disease Alerts</Text>
-                <Text style={styles.notificationDescription}>
-                  Get alerts for plant diseases in your area
-                </Text>
-              </View>
+        <TouchableOpacity 
+          style={styles.feedbackButton}
+          onPress={() => setFeedbackModalVisible(true)}
+        >
+          <View style={styles.feedbackButtonContent}>
+            <Ionicons name="chatbubble-ellipses-outline" size={24} color="#5D8A6F" />
+            <View style={styles.feedbackButtonText}>
+              <Text style={styles.feedbackButtonTitle}>Share Your Thoughts</Text>
+              <Text style={styles.feedbackButtonSubtitle}>Help us improve your experience</Text>
             </View>
-            <Switch
-              value={notifications.diseaseAlerts}
-              onValueChange={() => toggleNotification('diseaseAlerts')}
-              trackColor={{ false: '#F5F5F5', true: '#5D8A6F' }}
-              thumbColor="#FFFFFF"
-            />
           </View>
-
-          <View style={styles.notificationItem}>
-            <View style={styles.notificationInfo}>
-              <View style={[styles.notificationIcon, { backgroundColor: '#E8F5E8' }]}>
-                <Ionicons name="partly-sunny-outline" size={20} color="#5D8A6F" />
-              </View>
-              <View style={styles.notificationText}>
-                <Text style={styles.notificationTitle}>Weather Updates</Text>
-                <Text style={styles.notificationDescription}>
-                  Daily weather forecasts and alerts
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={notifications.weatherUpdates}
-              onValueChange={() => toggleNotification('weatherUpdates')}
-              trackColor={{ false: '#F5F5F5', true: '#5D8A6F' }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-
-          <View style={styles.notificationItem}>
-            <View style={styles.notificationInfo}>
-              <View style={[styles.notificationIcon, { backgroundColor: '#E8F5E8' }]}>
-                <Ionicons name="newspaper-outline" size={20} color="#5D8A6F" />
-              </View>
-              <View style={styles.notificationText}>
-                <Text style={styles.notificationTitle}>Crop News</Text>
-                <Text style={styles.notificationDescription}>
-                  Latest farming techniques and news
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={notifications.cropNews}
-              onValueChange={() => toggleNotification('cropNews')}
-              trackColor={{ false: '#F5F5F5', true: '#5D8A6F' }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-
-          <View style={styles.notificationItem}>
-            <View style={styles.notificationInfo}>
-              <View style={[styles.notificationIcon, { backgroundColor: '#E8F5E8' }]}>
-                <FontAwesome name="line-chart" size={18} color="#5D8A6F" />
-              </View>
-              <View style={styles.notificationText}>
-                <Text style={styles.notificationTitle}>Market Prices</Text>
-                <Text style={styles.notificationDescription}>
-                  Daily price updates for your crops
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={notifications.marketPrices}
-              onValueChange={() => toggleNotification('marketPrices')}
-              trackColor={{ false: '#F5F5F5', true: '#5D8A6F' }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-        </View>
+          <Ionicons name="chevron-forward" size={20} color="#A1887F" />
+        </TouchableOpacity>
       </View>
 
-      {/* Stats Summary */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>12</Text>
-          <Text style={styles.statLabel}>Disease Scans</Text>
+      {/* Feedback Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={feedbackModalVisible}
+        onRequestClose={() => setFeedbackModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Share Feedback</Text>
+              <TouchableOpacity 
+                onPress={() => setFeedbackModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="#37474F" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.ratingLabel}>How would you rate your experience?</Text>
+            {renderStars()}
+
+            <Text style={styles.feedbackLabel}>Your Feedback</Text>
+            <TextInput
+              style={styles.feedbackInput}
+              value={feedback}
+              onChangeText={setFeedback}
+              placeholder="Tell us what you think about Florix..."
+              placeholderTextColor="#A1887F"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setFeedbackModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[
+                  styles.submitButton,
+                  feedback.trim() === '' && styles.submitButtonDisabled
+                ]}
+                onPress={submitFeedback}
+                disabled={feedback.trim() === ''}
+              >
+                <Text style={styles.submitButtonText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>47</Text>
-          <Text style={styles.statLabel}>AI Chats</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>4</Text>
-          <Text style={styles.statLabel}>Plants</Text>
-        </View>
-      </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -247,232 +344,255 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAFAFA',
   },
-  profileHeader: {
-    backgroundColor: '#FFFFFF',
+  header: {
+    backgroundColor: '#5D8A6F',
     paddingHorizontal: 20,
-    paddingTop: 70,
-    paddingBottom: 25,
-    alignItems: 'center',
+    paddingTop: 45,
+    paddingBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#E8F5E8',
   },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 15,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#5D8A6F',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
+  headerTitle: {
     fontSize: 24,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  editButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FAFAFA',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#37474F',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 16,
-    color: '#A1887F',
-    marginBottom: 12,
-  },
-  addressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  userAddress: {
-    fontSize: 14,
-    color: '#37474F',
-    marginLeft: 6,
-    textAlign: 'center',
-  },
-  joinDate: {
-    fontSize: 12,
-    color: '#A1887F',
+    fontWeight: '700',
+    color: 'white',
   },
   section: {
     backgroundColor: '#FFFFFF',
-    marginTop: 12,
     paddingHorizontal: 20,
     paddingVertical: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#37474F',
+    marginBottom: 15,
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#A1887F',
-  },
-  seeAllText: {
-    fontSize: 14,
-    color: '#5D8A6F',
-    fontWeight: '500',
-  },
-  plantsScroll: {
-    flexDirection: 'row',
-  },
-  plantChip: {
+  detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  detailIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#E8F5E8',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-    marginRight: 10,
-  },
-  plantText: {
-    fontSize: 14,
-    color: '#5D8A6F',
-    fontWeight: '500',
-    marginLeft: 6,
-  },
-  addPlantChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#A1887F',
-    borderStyle: 'dashed',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-    marginRight: 10,
-  },
-  addPlantText: {
-    fontSize: 14,
-    color: '#A1887F',
-    fontWeight: '500',
-    marginLeft: 6,
-  },
-  activitiesList: {
-    gap: 16,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  activityIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  activityContent: {
+  detailContent: {
     flex: 1,
   },
-  activityTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#37474F',
-    marginBottom: 2,
-  },
-  activityDescription: {
-    fontSize: 14,
-    color: '#A1887F',
-    marginBottom: 2,
-  },
-  activityTime: {
+  detailLabel: {
     fontSize: 12,
     color: '#A1887F',
+    marginBottom: 2,
   },
-  notificationsList: {
-    gap: 20,
+  detailValue: {
+    fontSize: 16,
+    color: '#37474F',
+    fontWeight: '500',
   },
-  notificationItem: {
+  editButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+  },
+  editText: {
+    fontSize: 12,
+    color: '#5D8A6F',
+    fontWeight: '500',
+  },
+  shareContainer: {
+    backgroundColor: '#E8F5E8',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  shareIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#5D8A6F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  shareContent: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  shareTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#37474F',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  shareDescription: {
+    fontSize: 14,
+    color: '#5D8A6F',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  quickShareContainer: {
+    marginTop: 10,
+  },
+  quickShareTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#37474F',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  quickShareButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  quickShareButton: {
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#FAFAFA',
+    minWidth: 80,
+    marginRight: 10
+  },
+  quickShareText: {
+    fontSize: 12,
+    color: '#37474F',
+    marginTop: 6,
+    fontWeight: '500',
+  },
+  feedbackDescription: {
+    fontSize: 14,
+    color: '#A1887F',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  feedbackButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: '#FAFAFA',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E8F5E8',
   },
-  notificationInfo: {
+  feedbackButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  notificationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  notificationText: {
+  feedbackButtonText: {
+    marginLeft: 12,
     flex: 1,
   },
-  notificationTitle: {
+  feedbackButtonTitle: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#37474F',
     marginBottom: 2,
   },
-  notificationDescription: {
+  feedbackButtonSubtitle: {
     fontSize: 14,
     color: '#A1887F',
   },
-  statsContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    marginTop: 12,
-    marginBottom: 30,
-    paddingVertical: 20,
-  },
-  statItem: {
+  modalContainer: {
     flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
   },
-  statNumber: {
-    fontSize: 24,
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
     fontWeight: '600',
-    color: '#5D8A6F',
-    marginBottom: 4,
+    color: '#37474F',
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#A1887F',
+  closeButton: {
+    padding: 4,
+  },
+  ratingLabel: {
+    fontSize: 16,
+    color: '#37474F',
+    marginBottom: 15,
     fontWeight: '500',
   },
-  statDivider: {
-    width: 1,
-    height: '60%',
-    backgroundColor: '#E8F5E8',
-    alignSelf: 'center',
+  starsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  starButton: {
+    padding: 4,
+  },
+  feedbackLabel: {
+    fontSize: 16,
+    color: '#37474F',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  feedbackInput: {
+    borderWidth: 1,
+    borderColor: '#E8F5E8',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#37474F',
+    minHeight: 120,
+    marginBottom: 20,
+    backgroundColor: '#FAFAFA',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: '#37474F',
+    fontWeight: '500',
+  },
+  submitButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#5D8A6F',
+    alignItems: 'center',
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#A1887F',
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 });

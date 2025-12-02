@@ -1,4 +1,3 @@
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getOnboardingStatus } from '@/utils/onboarding';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
@@ -8,7 +7,8 @@ import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const colorScheme:string = 'light'; // or 'dark'
+
   const [isAppReady, setIsAppReady] = useState(false);
   const [isOnboarded, setIsOnboarded] = useState(false);
 
@@ -43,12 +43,12 @@ export default function RootLayout() {
         ) : (
           <>
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen 
-              name="modal" 
-              options={{ 
+            <Stack.Screen
+              name="modal"
+              options={{
                 presentation: 'modal',
-                headerShown: false
-              }} 
+                headerShown: false,
+              }}
             />
           </>
         )}

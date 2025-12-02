@@ -1,4 +1,5 @@
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import AppHeader from '@/components/ui/header';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -93,13 +94,7 @@ export default function AIChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <MaterialIcons name="smart-toy" size={24} color="white" />
-          <Text style={styles.headerTitle}>Florix Bot</Text>
-        </View>
-        <Text style={styles.headerSubtitle}>Your farming assistant</Text>
-      </View>
+      <AppHeader title='Florix Bot' page='florix-bot' showSettings={false}/>
 
       {/* Chat Messages */}
       <ScrollView 
@@ -176,29 +171,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-  },
-  header: {
-    backgroundColor: '#5D8A6F',
-    paddingHorizontal: 20,
-    paddingTop: 45,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8F5E8',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: 'white',
-    marginLeft: 10,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'white',
   },
   messagesContainer: {
     flex: 1,

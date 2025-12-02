@@ -5,13 +5,13 @@ import {
   Animated,
   Dimensions,
   ImageBackground,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get('window');
 
@@ -32,7 +32,7 @@ const slides = [
     subDescription: 'Ask questions about crops, weather, and techniques',
     image: require('@/assets/images/welcomesecond.png'),
     gradient: ['#4A7C59', '#3A6B4A'],
-    icon: '🤖',
+    icon: '⚙',
   },
   {
     id: '3',
@@ -106,7 +106,7 @@ export default function OnboardingScreen() {
       {/* App Logo/Title */}
       <View style={styles.logoContainer}>
         <View style={styles.logoIconContainer}>
-          <Text style={styles.logoIcon}>🌿</Text>
+          <Ionicons name="leaf" size={22} color="#49c47aff" />
         </View>
         <Text style={styles.logoText}>Florix</Text>
       </View>

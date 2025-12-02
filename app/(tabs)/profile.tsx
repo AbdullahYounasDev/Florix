@@ -1,3 +1,4 @@
+import AppHeader from '@/components/ui/header';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -161,9 +162,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
+      <AppHeader title='Profile' page='profile'/>
 
       {/* Section 1: User Details */}
       <View style={styles.section}>
@@ -343,19 +342,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-  },
-  header: {
-    backgroundColor: '#5D8A6F',
-    paddingHorizontal: 20,
-    paddingTop: 45,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8F5E8',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: 'white',
   },
   section: {
     backgroundColor: '#FFFFFF',

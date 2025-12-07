@@ -1,77 +1,164 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import PlantsSelector, { PlantCategory } from '@/components/ui/PlantsSelector';
+import { plantCategories } from '@/utils/plantCategories';
+import { Feather } from '@expo/vector-icons';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+
+// ✅ AsyncStorage utilities
+import {
+  getSelectedPlants,
+  updateSelectedPlants,
+} from '@/utils/userdata';
 
 interface Plant {
   id: string;
   name: string;
+  icon: string;
 }
 
 export default function PlantSection() {
-  const [plants, setPlants] = useState<Plant[]>([]);
+  const [selectedPlants, setSelectedPlants] = useState<Plant[]>([]);
+  const [modalSelectedPlants, setModalSelectedPlants] = useState<Plant[]>([]);
+  const [showSelectorModal, setShowSelectorModal] = useState(false);
 
-  // Mock fetching plants from backend
-  const fetchPlants = async () => {
-    // Replace this with API call in future
-    const data: Plant[] = [
-      { id: '1', name: 'Tomato' },
-      { id: '2', name: 'Wheat' },
-      { id: '3', name: 'Rice' },
-      { id: '4', name: 'Corn' },
-      { id: '5', name: 'Potato' },
-    ];
-    setPlants(data);
-  };
-
+  // ==============================
+  // Load saved plants from AsyncStorage
+  // ==============================
   useEffect(() => {
-    fetchPlants();
+    const loadPlants = async () => {
+      const savedIds = await getSelectedPlants();
+      const allPlants = plantCategories.flatMap(cat => cat.crops);
+      const fullPlants = savedIds
+        .map(id => allPlants.find(p => p.id === id))
+        .filter(Boolean) as Plant[];
+      setSelectedPlants(fullPlants);
+    };
+    loadPlants();
   }, []);
 
+  // ==============================
+  // Memoized all plants list
+  // ==============================
+  const allPlants = useMemo(() => plantCategories.flatMap(cat => cat.crops), []);
 
-  // Remove a plant
-  const removePlant = (id: string) => {
-    Alert.alert(
-      'Remove Plant',
-      'Are you sure you want to remove this plant?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => {
-          setPlants(plants.filter((p) => p.id !== id));
-        }},
-      ],
-      { cancelable: true }
-    );
+  // ==============================
+  // Open modal → copy main state
+  // ==============================
+  const openModal = () => {
+    setModalSelectedPlants([...selectedPlants]);
+    setShowSelectorModal(true);
+  };
+
+  // ==============================
+  // Toggle plant inside modal only
+  // ==============================
+  const togglePlantInModal = (plantId: string) => {
+    const plant = allPlants.find(p => p.id === plantId);
+    if (!plant) return;
+
+    setModalSelectedPlants(prev => {
+      if (prev.some(p => p.id === plantId)) {
+        return prev.filter(p => p.id !== plantId);
+      }
+      if (prev.length >= 9) {
+        Alert.alert("Limit reached", "You can select up to 9 plants only.");
+        return prev;
+      }
+      return [...prev, plant];
+    });
+  };
+
+  // ==============================
+  // Deselect All inside modal only
+  // ==============================
+  const deselectAllInModal = () => {
+    setModalSelectedPlants([]);
+  };
+
+  // ==============================
+  // Done → save to AsyncStorage + update main state
+  // ==============================
+  const handleDone = async () => {
+    try {
+      const ids = modalSelectedPlants.map(p => p.id);
+      await updateSelectedPlants(ids);
+      setSelectedPlants([...modalSelectedPlants]);
+      setShowSelectorModal(false);
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Failed to save selected plants.");
+    }
   };
 
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Your Plants</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.plantsContent}
-      >
-        {/* Add Plant Button */}
-        <TouchableOpacity style={styles.addPlant} activeOpacity={0.7} >
-          <Feather name="plus" size={24} color="#A1887F" />
-        </TouchableOpacity>
+    <>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Your Plants</Text>
+        </View>
 
-        {/* Render Plants */}
-        {plants.map((plant) => (
-          <TouchableOpacity
-            key={plant.id}
-            style={styles.plantItem}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.plantsContent}
+        >
+          {/* Add Plant Button */}
+          <TouchableOpacity 
+            style={styles.addPlant} 
             activeOpacity={0.7}
-            onPress={() => removePlant(plant.id)}
+            onPress={openModal}
           >
-            <View style={styles.plantIcon}>
-              <Ionicons name="leaf" size={24} color="#5D8A6F" />
-            </View>
-            <Text style={styles.plantName}>{plant.name}</Text>
+            <Feather name="plus" size={24} color="#A1887F" />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+
+          {/* Render Saved Plants */}
+          {selectedPlants.map(plant => (
+            <TouchableOpacity
+              key={plant.id}
+              style={styles.plantItem}
+              activeOpacity={0.7}
+            >
+              <View style={styles.plantIcon}>
+                <Text style={styles.plantIconText}>{plant.icon}</Text>
+              </View>
+              <Text style={styles.plantName}>{plant.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Plant Selector Modal */}
+      <Modal
+        visible={showSelectorModal}
+        animationType="slide"
+        onRequestClose={() => setShowSelectorModal(false)}
+      >
+        <PlantsSelector
+          selectedPlants={modalSelectedPlants.map(p => p.id)}
+          onPlantToggle={togglePlantInModal}
+          onDeselectAll={deselectAllInModal}
+          categories={plantCategories as PlantCategory[]}
+          onContinue={handleDone}
+          onBack={() => setShowSelectorModal(false)}
+          showHeader
+          showSelectionSummary
+          showActions
+          continueButtonText="Done"
+          backButtonText="Cancel"
+          title="Manage Plants"
+          subtitle="Add or remove plants from your collection"
+          page="home"
+        />
+      </Modal>
+    </>
   );
 }
 
@@ -80,18 +167,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#37474F',
-    marginBottom: 15,
   },
   plantsContent: {
-    paddingRight: 10,
+    paddingRight: 20,
+    alignItems: 'center',
   },
   plantItem: {
     alignItems: 'center',
-    marginRight: 5,
+    marginRight: 7,
     width: 70,
   },
   plantIcon: {
@@ -102,6 +195,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  plantIconText: {
+    fontSize: 28,
   },
   plantName: {
     fontSize: 12,
@@ -119,5 +215,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
+    marginBottom: 15,
   },
 });

@@ -8,6 +8,10 @@ export interface UserAddress {
   state?: string;
   country?: string;
   postalCode?: string;
+
+  latitude?: number;
+  longitude?: number;
+  formattedAddress?: string;
 }
 
 export interface UserData {

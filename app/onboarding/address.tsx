@@ -1,4 +1,6 @@
+// onboarding/address.tsx
 import { setOnboardingComplete } from '@/utils/onboarding';
+import { updateAddress, UserAddress } from '@/utils/userdata';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
@@ -6,12 +8,8 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
@@ -19,95 +17,122 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AddressScreen() {
   const router = useRouter();
-  const [address, setAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [manualMode, setManualMode] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(true);
+  const [locationData, setLocationData] = useState<any>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
   useEffect(() => {
-    getCurrentLocation();
+    // Auto-detect location on screen load
+    detectCurrentLocation();
   }, []);
 
-  const getCurrentLocation = async () => {
+  const detectCurrentLocation = async () => {
     try {
-      setIsGettingLocation(true);
+      setIsDetectingLocation(true);
+      setPermissionDenied(false);
 
+      // Request location permission
       let { status } = await Location.requestForegroundPermissionsAsync();
+      
       if (status !== 'granted') {
+        setPermissionDenied(true);
         Alert.alert(
-          'Permission Denied',
-          'Location permission is required to get your farm address automatically.',
-          [{ text: 'OK' }]
+          'Location Permission Required',
+          'Please enable location services to automatically detect your farm location. Go to Settings > Privacy > Location Services to enable.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Open Settings', 
+              onPress: () => {
+                // On iOS, can't programmatically open settings from Expo
+                // User will need to do it manually
+              }
+            }
+          ]
         );
-        setManualMode(true);
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({
+      // Get current position
+      let position = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
 
+      // Reverse geocode to get address
       let geocode = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
       });
 
       if (geocode.length > 0) {
-        const locationData = geocode[0];
-        const formattedAddress = formatAddress(locationData);
-        setAddress(formattedAddress);
-        Alert.alert(
-          'Location Found',
-          'Your farm address has been detected automatically.',
-          [{ text: 'OK' }]
-        );
+        const locationInfo = geocode[0];
+        setLocationData({
+          ...locationInfo,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
       }
+
     } catch (error) {
-      console.error('Error getting location:', error);
+      console.error('Error detecting location:', error);
       Alert.alert(
         'Location Error',
-        'Could not get your location. Please enter address manually.',
-        [{ text: 'OK', onPress: () => setManualMode(true) }]
+        'Unable to detect your location. Please try again.',
+        [{ text: 'Try Again', onPress: () => detectCurrentLocation() }]
       );
     } finally {
-      setIsGettingLocation(false);
+      setIsDetectingLocation(false);
     }
   };
 
-  const formatAddress = (locationData: any) => {
+  const formatAddress = (data: any): string => {
+    if (!data) return '';
+    
     const parts = [];
-    if (locationData.name) parts.push(locationData.name);
-    if (locationData.street) parts.push(locationData.street);
-    if (locationData.city) parts.push(locationData.city);
-    if (locationData.region) parts.push(locationData.region);
-    if (locationData.country) parts.push(locationData.country);
-
+    if (data.street) parts.push(data.street);
+    if (data.city) parts.push(data.city);
+    if (data.region) parts.push(data.region);
+    if (data.country) parts.push(data.country);
+    
     return parts.join(', ');
   };
 
-  const handleUseCurrentLocation = async () => {
-    await getCurrentLocation();
-    setManualMode(false);
+  const prepareAddressData = (data: any): UserAddress => {
+    return {
+      street: data.street || '',
+      city: data.city || '',
+      state: data.region || '',
+      country: data.country || '',
+      postalCode: data.postalCode || '',
+      latitude: data.latitude,
+      longitude: data.longitude,
+      formattedAddress: formatAddress(data),
+    };
   };
 
-  const handleManualEntry = () => {
-    setManualMode(true);
-    setAddress('');
-  };
-
-  const handleComplete = async () => {
-    if (address.trim() === '') {
-      Alert.alert('Error', 'Please enter your farm address');
+  const handleCompleteSetup = async () => {
+    if (!locationData) {
+      Alert.alert('Location Required', 'Please wait for location detection to complete.');
       return;
     }
 
     try {
       setIsLoading(true);
+      
+      // Save address to user data
+      const addressData = prepareAddressData(locationData);
+      await updateAddress(addressData);
+      
+      // Complete onboarding
       await setOnboardingComplete();
+      
+      // Navigate to main app
       router.replace('/(tabs)');
+      
     } catch (error) {
-      console.error('Error completing onboarding:', error);
-      Alert.alert('Error', 'Failed to complete setup. Please try again.');
+      console.error('Error completing setup:', error);
+      Alert.alert('Setup Error', 'Failed to complete setup. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -117,161 +142,135 @@ export default function AddressScreen() {
     router.back();
   };
 
+  const handleRetryDetection = () => {
+    detectCurrentLocation();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.content}>
-            {/* Header - Simplified */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Farm Location</Text>
-            </View>
+      <View style={styles.content}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Your Current Location</Text>
+          <Text style={styles.subtitle}>
+            We'll use your device's GPS to automatically find your location
+          </Text>
+        </View>
 
-            {/* Location Detection Section */}
-            {!manualMode ? (
-              <View style={styles.locationSection}>
-                <View style={styles.locationIconContainer}>
-                  <Ionicons name="locate" size={60} color="#5D8A6F" />
-                </View>
-
-                <Text style={styles.locationTitle}>
-                  {isGettingLocation ? 'Detecting your location...' : 'Use Current Location'}
-                </Text>
-
-                <Text style={styles.locationDescription}>
-                  We'll use your device's GPS to automatically find your farm address
-                </Text>
-
-                {isGettingLocation ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#5D8A6F" />
-                    <Text style={styles.loadingText}>Getting your location...</Text>
-                  </View>
-                ) : (
-                  <>
-                    <TouchableOpacity
-                      style={styles.locationButton}
-                      onPress={handleUseCurrentLocation}
-                      disabled={isGettingLocation}
-                    >
-                      <Ionicons name="navigate" size={24} color="#FFFFFF" />
-                      <Text style={styles.locationButtonText}>
-                        {address ? 'Update Location' : 'Detect My Location'}
-                      </Text>
-                    </TouchableOpacity>
-
-                    {address ? (
-                      <View style={styles.detectedAddress}>
-                        <Text style={styles.detectedAddressTitle}>Detected Address:</Text>
-                        <Text style={styles.detectedAddressText}>{address}</Text>
-
-                        <TouchableOpacity
-                          style={styles.editButton}
-                          onPress={() => setManualMode(true)}
-                        >
-                          <Ionicons name="create-outline" size={18} color="#5D8A6F" />
-                          <Text style={styles.editButtonText}>Edit Address</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <TouchableOpacity
-                        style={styles.manualButton}
-                        onPress={handleManualEntry}
-                      >
-                        <Text style={styles.manualButtonText}>Enter Address Manually</Text>
-                      </TouchableOpacity>
-                    )}
-                  </>
-                )}
-              </View>
+        {/* Main Content */}
+        <View style={styles.mainContent}>
+          {/* Location Icon */}
+          <View style={styles.locationIconContainer}>
+            {isDetectingLocation ? (
+              <ActivityIndicator size="large" color="#5D8A6F" />
+            ) : locationData ? (
+              <Ionicons name="checkmark-circle" size={80} color="#5D8A6F" />
+            ) : permissionDenied ? (
+              <Ionicons name="alert-circle" size={80} color="#FF9800" />
             ) : (
-              /* Manual Entry Section */
-              <View style={styles.manualSection}>
-                <View style={styles.manualHeader}>
-                  <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => setManualMode(false)}
-                  >
-                    <Ionicons name="arrow-back" size={24} color="#5D8A6F" />
-                  </TouchableOpacity>
-                  <Text style={styles.manualTitle}>Enter Address Manually</Text>
-                </View>
+              <Ionicons name="locate" size={80} color="#5D8A6F" />
+            )}
+          </View>
 
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={styles.textInput}
-                    value={address}
-                    onChangeText={setAddress}
-                    placeholder="e.g., 123 Farm Road, Village, District, Country"
-                    placeholderTextColor="#A1887F"
-                    multiline
-                    numberOfLines={4}
-                    textAlignVertical="top"
-                    autoFocus={true}
-                  />
+          {/* Status Message */}
+          <Text style={styles.statusTitle}>
+            {isDetectingLocation 
+              ? 'Detecting your location...' 
+              : locationData 
+                ? 'Location Found!' 
+                : permissionDenied
+                  ? 'Permission Denied'
+                  : 'Ready to Detect Location'}
+          </Text>
 
-                  <View style={styles.addressExample}>
-                    <Ionicons name="information-circle-outline" size={18} color="#A1887F" />
-                    <Text style={styles.exampleText}>
-                      Include landmarks, village/town, district, and country for best results
-                    </Text>
-                  </View>
-                </View>
+          {/* Description */}
+          <Text style={styles.description}>
+            {isDetectingLocation 
+              ? 'Please wait while we detect your precise location'
+              : locationData
+                ? 'Your current location has been successfully detected'
+                : permissionDenied
+                  ? 'Location permission is required to continue'
+                  : 'Tap "Detect Location" to find your current position'}
+          </Text>
 
-                {!address && (
-                  <TouchableOpacity
-                    style={styles.autoDetectButton}
-                    onPress={handleUseCurrentLocation}
-                  >
-                    <Ionicons name="locate-outline" size={20} color="#5D8A6F" />
-                    <Text style={styles.autoDetectText}>Auto-detect my location</Text>
-                  </TouchableOpacity>
-                )}
+          {/* Detected Location Display */}
+          {locationData && !isDetectingLocation && (
+            <View style={styles.addressCard}>
+              <Text style={styles.addressTitle}>Detected Location:</Text>
+              <Text style={styles.addressText}>{formatAddress(locationData)}</Text>
+              
+              <View style={styles.coordinates}>
+                <Text style={styles.coordinateText}>
+                  Coordinates: {locationData.latitude?.toFixed(6)}, {locationData.longitude?.toFixed(6)}
+                </Text>
               </View>
+            </View>
+          )}
+
+          {/* Error State */}
+          {permissionDenied && !isDetectingLocation && (
+            <View style={styles.errorCard}>
+              <Ionicons name="warning" size={24} color="#FF9800" />
+              <Text style={styles.errorText}>
+                Please enable location permission in your device settings to continue.
+              </Text>
+            </View>
+          )}
+
+          {/* Action Buttons */}
+          <View style={styles.actionsContainer}>
+            {!isDetectingLocation && !locationData && !permissionDenied && (
+              <TouchableOpacity
+                style={styles.detectButton}
+                onPress={detectCurrentLocation}
+              >
+                <Ionicons name="navigate" size={24} color="#FFFFFF" />
+                <Text style={styles.detectButtonText}>Detect My Location</Text>
+              </TouchableOpacity>
             )}
 
-            {/* Navigation Buttons Row */}
-            <View style={styles.navigationRow}>
-              {/* Back Button */}
-              <TouchableOpacity 
-                style={styles.backButtonBottom}
-                onPress={handleBack}
-              >
-                <Ionicons name="arrow-back" size={20} color="#8B4513" />
-                <Text style={styles.backButtonText}>Back</Text>
-              </TouchableOpacity>
-
-              {/* Complete Setup Button */}
+            {permissionDenied && !isDetectingLocation && (
               <TouchableOpacity
-                style={[
-                  styles.completeButton,
-                  (address.trim() === '' || isLoading) && styles.completeButtonDisabled
-                ]}
-                onPress={handleComplete}
-                disabled={address.trim() === '' || isLoading}
+                style={styles.retryButton}
+                onPress={handleRetryDetection}
               >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Text style={styles.completeButtonText}>
-                      Complete Setup
-                    </Text>
-                    <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
-                  </>
-                )}
+                <Ionicons name="refresh" size={20} color="#5D8A6F" />
+                <Text style={styles.retryButtonText}>Retry Location Detection</Text>
               </TouchableOpacity>
-            </View>
+            )}
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+
+        {/* Navigation Buttons */}
+        <View style={styles.navigationRow}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={handleBack}
+          >
+            <Ionicons name="arrow-back" size={20} color="#8B4513" />
+            <Text style={styles.backButtonText}>Back</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.continueButton,
+              (!locationData || isLoading) && styles.continueButtonDisabled
+            ]}
+            onPress={handleCompleteSetup}
+            disabled={!locationData || isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <Text style={styles.continueButtonText}>Complete Setup</Text>
+                <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -281,204 +280,157 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAFAFA',
   },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 45,
+    paddingTop: 50,
     paddingBottom: 30,
-    minHeight: '100%',
   },
   header: {
-    marginBottom: 10,
     alignItems: 'center',
+    marginBottom: 40,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
     color: '#37474F',
-    marginBottom: 8,
+    marginBottom: 12,
     textAlign: 'center',
   },
-  locationSection: {
+  subtitle: {
+    fontSize: 16,
+    color: '#A1887F',
+    textAlign: 'center',
+    lineHeight: 22,
+    maxWidth: 300,
+  },
+  mainContent: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 10,
   },
   locationIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: '#E8F5E8',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
   },
-  locationTitle: {
+  statusTitle: {
     fontSize: 22,
     fontWeight: '600',
     color: '#37474F',
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: 'center',
   },
-  locationDescription: {
+  description: {
     fontSize: 16,
     color: '#A1887F',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 30,
-    maxWidth: 280,
+    maxWidth: 320,
   },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: 30,
+  addressCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 25,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#5D8A6F',
+    width: '100%',
+    marginBottom: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  loadingText: {
+  addressTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#37474F',
+    marginBottom: 12,
+  },
+  addressText: {
     fontSize: 16,
     color: '#5D8A6F',
-    marginTop: 15,
-    fontWeight: '500',
+    lineHeight: 24,
+    marginBottom: 15,
   },
-  locationButton: {
+  coordinates: {
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#E8F5E8',
+  },
+  coordinateText: {
+    fontSize: 14,
+    color: '#A1887F',
+    fontStyle: 'italic',
+  },
+  errorCard: {
+    backgroundColor: '#FFF8E1',
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFECB3',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    width: '100%',
+    marginBottom: 25,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#FF9800',
+    marginLeft: 12,
+    flex: 1,
+    lineHeight: 20,
+  },
+  actionsContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  detectButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#5D8A6F',
-    paddingHorizontal: 30,
-    paddingVertical: 16,
+    paddingHorizontal: 32,
+    paddingVertical: 18,
     borderRadius: 16,
-    marginBottom: 25,
-    minWidth: 200,
+    width: '100%',
   },
-  locationButtonText: {
+  detectButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
-    marginLeft: 10,
+    marginLeft: 12,
   },
-  detectedAddress: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E8F5E8',
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  detectedAddressTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#37474F',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  detectedAddressText: {
-    fontSize: 14,
-    color: '#5D8A6F',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
-  },
-  editButtonText: {
-    fontSize: 14,
-    color: '#5D8A6F',
-    fontWeight: '500',
-    marginLeft: 6,
-  },
-  manualButton: {
-    paddingVertical: 12,
-  },
-  manualButtonText: {
-    fontSize: 16,
-    color: '#5D8A6F',
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-  manualSection: {
-    flex: 1,
-  },
-  manualHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 25,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 12,
-  },
-  manualTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#37474F',
-    flex: 1,
-  },
-  inputContainer: {
-    marginBottom: 25,
-  },
-  textInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8F5E8',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#37474F',
-    minHeight: 120,
-    marginBottom: 12,
-    textAlignVertical: 'top',
-  },
-  addressExample: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#F5F5F5',
-    padding: 15,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#E8F5E8',
-  },
-  exampleText: {
-    fontSize: 13,
-    color: '#A1887F',
-    marginLeft: 10,
-    flex: 1,
-    lineHeight: 18,
-  },
-  autoDetectButton: {
+  retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 15,
     backgroundColor: '#E8F5E8',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     borderRadius: 12,
-    marginBottom: 25,
+    borderWidth: 1,
+    borderColor: '#5D8A6F',
+    width: '100%',
   },
-  autoDetectText: {
-    fontSize: 16,
+  retryButtonText: {
     color: '#5D8A6F',
+    fontSize: 16,
     fontWeight: '600',
     marginLeft: 10,
   },
   navigationRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 20,
+    paddingTop: 20,
   },
-  backButtonBottom: {
+  backButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -496,7 +448,7 @@ const styles = StyleSheet.create({
     color: '#8B4513',
     marginLeft: 8,
   },
-  completeButton: {
+  continueButton: {
     flex: 2,
     flexDirection: 'row',
     alignItems: 'center',
@@ -506,11 +458,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
   },
-  completeButtonDisabled: {
+  continueButtonDisabled: {
     backgroundColor: '#A1887F',
     opacity: 0.6,
   },
-  completeButtonText: {
+  continueButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',

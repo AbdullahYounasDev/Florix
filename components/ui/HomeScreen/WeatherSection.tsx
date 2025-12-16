@@ -1,12 +1,26 @@
+import { getAddress } from "@/utils/userdata";
+import { getWeatherAdvice } from "@/utils/weatherAdvice";
+import { getWeatherIcon } from "@/utils/weatherIcon";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import WeatherDetailsModal from "./weather/WeatherDetailsModal";
 
-
+// ======================
+// Types
+// ======================
 interface WeatherData {
   city: string;
   temperature: number;
   condition: string;
+  icon: string;
 }
 
 interface Recommendation {
@@ -15,108 +29,190 @@ interface Recommendation {
   type: "good" | "bad";
 }
 
+// ======================
+// Constants
+// ======================
+const API_KEY = "6f6181a36d49f8ee5d4b4c64fb84194d"
+// ======================
+// Component
+// ======================
 export default function WeatherSection() {
-// -------------------------------
-// State with Types
-// -------------------------------
-const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [fullWeatherData, setFullWeatherData] = useState<any>(null);
 
-// -------------------------------
-// Simulate API call structure (no real API used)
-// -------------------------------
-useEffect(() => {
-  const fetchMockWeather = async () => {
-    // ⭐ In future, replace this with real API:
-    // const response = await fetch("YOUR_API_URL");
-    // const data = await response.json();
+  const fetchWeather = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    const mockWeather: WeatherData = {
-      city: "Lahore",
-      temperature: 32,
-      condition: "Sunny",
-    };
+      const address = await getAddress();
+      if (!address?.latitude || !address?.longitude) {
+        throw new Error("Location not available");
+      }
 
-    const mockRecommendations: Recommendation[] = [
-      { id: 1, text: "Good for watering", type: "good" },
-      { id: 2, text: "Not suitable for spray", type: "bad" },
-    ];
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${address.latitude}&lon=${address.longitude}&appid=${API_KEY}&units=metric`
+      );
 
-    setWeatherData(mockWeather);
-    setRecommendations(mockRecommendations);
+      if (!response.ok) {
+        const err = await response.text();
+        console.log("🌩 API Error:", err);
+        throw new Error("Weather API failed");
+      }
+
+      const data = await response.json();
+      setFullWeatherData(data);
+
+      const formattedWeather: WeatherData = {
+        city: data.name,
+        temperature: Math.round(data.main.temp),
+        condition: data.weather[0].main,
+        icon: data.weather[0].icon,
+      };
+
+      // Simple rules for advice
+      const advice = getWeatherAdvice(data);
+
+      setWeatherData(formattedWeather);
+      setRecommendations(advice);
+    } catch (err: any) {
+      console.error("❌ Weather error:", err);
+      setError("Unable to load weather data");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  fetchMockWeather();
-}, []);
+  useEffect(() => {
+    fetchWeather();
+  }, [retryCount]);
 
-// Optional: handle loading state
-if (!weatherData) return null;
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+  };
 
+  // ======================
+  // Loading
+  // ======================
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#5D8A6F" />
+      </View>
+    );
+  }
+
+  // ======================
+  // Error
+  // ======================
+  if (error || !weatherData) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="cloud-offline-outline" size={40} color="#A1887F" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={handleRetry}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="refresh-outline" size={20} color="#5D8A6F" />
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // ======================
+  // UI
+  // ======================
   return (
     <View style={styles.weatherSection}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.horizontalScroll}
-      >
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {/* WEATHER CARD */}
-        <View style={styles.weatherCard}>
-          <View style={styles.weatherHeader}>
-            <Text style={styles.weatherCity}>{weatherData.city}</Text>
-            <Ionicons name={weatherData.temperature >= 30 ? 'sunny' : 'cloud'} size={28} color="#FFA500" />
-          </View>
+        <TouchableOpacity onPress={() => setModalVisible(true)} activeOpacity={0.9}>
+          <View style={styles.weatherCard}>
+            <View style={styles.weatherHeader}>
+              <Text style={styles.weatherCity}>{weatherData.city}</Text>
+              {(() => {
+                const icon = getWeatherIcon(
+                  weatherData.condition,
+                  weatherData.icon
+                );
 
-          <Text style={styles.temperature}>{weatherData.temperature}°C</Text>
-          <Text style={styles.weatherCondition}>{weatherData.condition}</Text>
-        </View>
+                return (
+                  <Ionicons
+                    name={icon.name as any}
+                    size={28}
+                    color={icon.color}
+                  />
+                );
+              })()}
+            </View>
+
+            <Text style={styles.temperature}>
+              {weatherData.temperature}°C
+            </Text>
+            <Text style={styles.weatherCondition}>
+              {weatherData.condition}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         {/* RECOMMENDATION CARD */}
-        <View style={styles.recommendationCard}>
-          <Text style={styles.recommendationTitle}>Weather Advice</Text>
+        <TouchableOpacity onPress={() => setModalVisible(true)} activeOpacity={0.9}>
+          <View style={styles.recommendationCard}>
+            <Text style={styles.recommendationTitle}>Weather Advice</Text>
 
-          {recommendations.map((item) => (
-            <View key={item.id} style={styles.recommendationItem}>
-              <Ionicons
-                name={
-                  item.type === "good"
-                    ? "checkmark-circle"
-                    : "close-circle"
-                }
-                size={20}
-                color={item.type === "good" ? "#5D8A6F" : "#A1887F"}
-              />
-              <Text style={styles.recommendationText}>{item.text}</Text>
-            </View>
-          ))}
-        </View>
+            {recommendations.map((item) => (
+              <View key={item.id} style={styles.recommendationItem}>
+                <Ionicons
+                  name={
+                    item.type === "good"
+                      ? "checkmark-circle"
+                      : "close-circle"
+                  }
+                  size={20}
+                  color={item.type === "good" ? "#5D8A6F" : "#A1887F"}
+                />
+                <Text style={styles.recommendationText}>{item.text}</Text>
+              </View>
+            ))}
+          </View>
+        </TouchableOpacity>
       </ScrollView>
+      <WeatherDetailsModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        weather={fullWeatherData!}
+        recommendations={recommendations}
+      />
     </View>
   );
 }
 
+// ======================
+// Styles
+// ======================
 const styles = StyleSheet.create({
   weatherSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-
-  horizontalScroll: {
-    flexDirection: "row",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
   },
 
   weatherCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    padding: 20,
+    padding: 15,
     marginRight: 15,
-    marginLeft: 1,
+    marginLeft: 3,
     marginBottom: 15,
     width: 150,
     elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
   },
 
   weatherHeader: {
@@ -136,7 +232,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "300",
     color: "#37474F",
-    marginBottom: 4,
   },
 
   weatherCondition: {
@@ -144,26 +239,20 @@ const styles = StyleSheet.create({
     color: "#A1887F",
   },
 
-  // Recommendation Styles
   recommendationCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    padding: 20,
-    marginRight: 20,
+    padding: 15,
     marginBottom: 15,
-    width: 200,
+    width: 170,
     elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
   },
 
   recommendationTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#37474F",
     marginBottom: 15,
+    color: "#37474F",
   },
 
   recommendationItem: {
@@ -173,8 +262,46 @@ const styles = StyleSheet.create({
   },
 
   recommendationText: {
+    marginLeft: 10,
     fontSize: 14,
     color: "#37474F",
-    marginLeft: 10,
   },
-});
+
+  center: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
+
+  errorContainer: {
+    paddingVertical: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  errorText: {
+    color: "#A1887F",
+    fontSize: 16,
+    marginTop: 10,
+    marginBottom: 20,
+    textAlign: "center",
+    paddingHorizontal: 20,
+  },
+
+  retryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#5D8A6F",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 6,
+  },
+
+  retryButtonText: {
+    color: "#5D8A6F",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+})

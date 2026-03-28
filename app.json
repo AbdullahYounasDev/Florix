@@ -8,8 +8,18 @@
     "scheme": "florix",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/welcomethird.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFAFA"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "splash": {
+        "image": "./assets/images/welcomethird.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#FAFAFA"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +29,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.abdullahyounasdev.Florix"
     },
     "web": {
       "output": "static",
@@ -30,9 +41,12 @@
       [
         "expo-splash-screen",
         {
+          "image": "./assets/images/welcomethird.png",
+          "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#FAFAFA",
           "dark": {
+            "image": "./assets/images/welcomethird.png",
             "backgroundColor": "#000000"
           }
         }

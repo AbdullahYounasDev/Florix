@@ -33,47 +33,90 @@ interface Props {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PEST_CATEGORIES: PestCategory[] = [
+  // === DISEASES ===
   {
     id: 'fungal',
-    label: 'Fungal Diseases',
-    icon: 'mushroom',
-    description: 'Blight, mildew, rust & root rot',
+    label: 'Fungal',
+    icon: 'mushroom', // MaterialCommunityIcons
+    description: 'Blight, mildew, rust & rot',
   },
   {
     id: 'bacterial',
-    label: 'Bacterial Diseases',
-    icon: 'bacteria',
+    label: 'Bacterial',
+    icon: 'bacteria', // MaterialCommunityIcons
     description: 'Wilt, blight, canker & rot',
   },
   {
     id: 'viral',
-    label: 'Viral Diseases',
-    icon: 'virus',
+    label: 'Viral',
+    icon: 'virus', // MaterialCommunityIcons
     description: 'Mosaic, leaf curl & yellowing',
   },
   {
-    id: 'insects',
-    label: 'Insect Pests',
-    icon: 'bug',
-    description: 'Aphids, borers, caterpillars',
+    id: 'oomycete',
+    label: 'Oomycete',
+    icon: 'water', // MaterialCommunityIcons
+    description: 'Downy mildew & late blight',
   },
+
+  // === INSECT PESTS ===
+  {
+    id: 'sucking-pests',
+    label: 'Sucking',
+    icon: 'bug', // MaterialCommunityIcons
+    description: 'Aphids, whiteflies, jassids & thrips',
+  },
+  {
+    id: 'chewing-pests',
+    label: 'Chewing',
+    icon: 'bug-outline', // MaterialCommunityIcons
+    description: 'Caterpillars, beetles & grasshoppers',
+  },
+  {
+    id: 'leaf-miners',
+    label: 'Miners',
+    icon: 'leaf-maple', // MaterialCommunityIcons
+    description: 'Larvae feeding inside leaves',
+  },
+  {
+    id: 'mites',
+    label: 'Mites',
+    icon: 'spider', // MaterialCommunityIcons
+    description: 'Spider mites & red mites',
+  },
+
+  // === SOIL PESTS & DISEASES ===
   {
     id: 'nematodes',
     label: 'Nematodes',
-    icon: 'dna',
+    icon: 'dna', // MaterialCommunityIcons
     description: 'Root-knot & cyst nematodes',
   },
   {
-    id: 'weeds',
-    label: 'Weed Problems',
-    icon: 'grass',
-    description: 'Competitive weed species',
+    id: 'soil-borne',
+    label: 'Soil-Borne',
+    icon: 'earth', // MaterialCommunityIcons
+    description: 'Fusarium, rhizoctonia & root rot',
   },
   {
-    id: 'nutrient',
-    label: 'Nutrient Deficiency',
-    icon: 'leaf',
-    description: 'Yellowing, poor growth & low yield',
+    id: 'soil-insects',
+    label: 'Soil Insects',
+    icon: 'earth', // MaterialCommunityIcons
+    description: 'Grubs, cutworms & root maggots',
+  },
+
+  // === WEEDS ===
+  {
+    id: 'grassy-weeds',
+    label: 'Grassy',
+    icon: 'grass', // MaterialCommunityIcons
+    description: 'Wild grasses & sedges',
+  },
+  {
+    id: 'broadleaf-weeds',
+    label: 'Broadleaf',
+    icon: 'flower-outline', // MaterialCommunityIcons
+    description: 'Non-grass weed species',
   },
 ];
 
@@ -96,12 +139,14 @@ export default function PestsAndDisease({ onClose }: Props) {
   const [selectedCrop, setSelectedCrop] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<PestCategory | null>(null);
   const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     const fetchCountry = async () => {
       const address = await getAddress();
       setCountry(address?.country || "International");
+      setCity(address?.city || "International");
     };
     fetchCountry();
   }, []);
@@ -208,6 +253,8 @@ export default function PestsAndDisease({ onClose }: Props) {
           diseaseType={selectedCategory.label}
           country={country}
           ModalHeading="Disease Details"
+          city={city}
+          ModalParent="PestsAndDisease"
         />
       )}
     </View>

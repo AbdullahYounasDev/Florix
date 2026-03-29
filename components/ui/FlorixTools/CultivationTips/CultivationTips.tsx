@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
-  Dimensions,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,8 +16,6 @@ import { getAddress } from '@/utils/userdata';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import CropSelector from '../../Useable/CropSelector';
 import DiagnosisModal from '../../Useable/DiagnosisModal';
-
-const { width } = Dimensions.get('window');
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +33,7 @@ interface Props {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const GROWTH_STAGES: GrowthStage[] = [
+  // === CROP GROWTH STAGES ===
   {
     id: 'germination',
     label: 'Germination',
@@ -50,7 +48,7 @@ const GROWTH_STAGES: GrowthStage[] = [
   },
   {
     id: 'vegetative',
-    label: 'Vegetative Growth',
+    label: 'Vegetative',
     icon: 'leaf',
     description: 'Leaf & stem development',
   },
@@ -68,21 +66,167 @@ const GROWTH_STAGES: GrowthStage[] = [
   },
   {
     id: 'maturity',
-    label: 'Maturity / Ripening',
+    label: 'Maturity',
     icon: 'timer-sand',
     description: 'Final development before harvest',
   },
+
+  // === SOIL & LAND PREPARATION ===
+  {
+    id: 'land-prep',
+    label: 'Land Prep',
+    icon: 'tractor',
+    description: 'Plowing & soil preparation',
+  },
+  {
+    id: 'bed-making',
+    label: 'Bed Making',
+    icon: 'terrain',
+    description: 'Raising beds or ridges',
+  },
+
+  // === PLANTING & SOWING ===
+  {
+    id: 'sowing',
+    label: 'Sowing',
+    icon: 'sprout',
+    description: 'Seed planting in soil',
+  },
+  {
+    id: 'transplanting',
+    label: 'Transplanting',
+    icon: 'swap-horizontal',
+    description: 'Moving seedlings to field',
+  },
+
+  // === WATER MANAGEMENT ===
+  {
+    id: 'irrigation',
+    label: 'Irrigation',
+    icon: 'water',
+    description: 'Water supply to crops',
+  },
+  {
+    id: 'drainage',
+    label: 'Drainage',
+    icon: 'water-pump',
+    description: 'Removing excess water',
+  },
+
+  // === NUTRITION & FERTILIZATION ===
+  {
+    id: 'basal-dose',
+    label: 'Basal Dose',
+    icon: 'flask',
+    description: 'Base fertilizer application',
+  },
+  {
+    id: 'top-dressing',
+    label: 'Top Dressing',
+    icon: 'spray',
+    description: 'Additional fertilizer application',
+  },
+  {
+    id: 'foliar-spray',
+    label: 'Foliar Spray',
+    icon: 'spray-bottle',
+    description: 'Liquid nutrients on leaves',
+  },
+
+  // === PEST & DISEASE MANAGEMENT ===
+  {
+    id: 'pest-control',
+    label: 'Pest Control',
+    icon: 'bug',
+    description: 'Insect & pest management',
+  },
+  {
+    id: 'disease-control',
+    label: 'Disease Control',
+    icon: 'virus',
+    description: 'Fungus & disease prevention',
+  },
+  {
+    id: 'weed-control',
+    label: 'Weed Control',
+    icon: 'grass',
+    description: 'Removing unwanted plants',
+  },
+
+  // === CROP MANAGEMENT ===
+  {
+    id: 'staking',
+    label: 'Staking',
+    icon: 'pine-tree',
+    description: 'Support for climbing plants',
+  },
+  {
+    id: 'pruning',
+    label: 'Pruning',
+    icon: 'content-cut',
+    description: 'Trimming excess branches',
+  },
+  {
+    id: 'mulching',
+    label: 'Mulching',
+    icon: 'leaf-circle',
+    description: 'Covering soil with material',
+  },
+  {
+    id: 'thinning',
+    label: 'Thinning',
+    icon: 'delete-outline',
+    description: 'Removing excess seedlings',
+  },
+
+  // === HARVEST & POST-HARVEST ===
   {
     id: 'harvest',
     label: 'Harvest',
     icon: 'sickle',
     description: 'Ready for collection',
   },
-];
+  {
+    id: 'post-harvest',
+    label: 'Post-Harvest',
+    icon: 'archive',
+    description: 'Cleaning & sorting produce',
+  },
+  {
+    id: 'storage',
+    label: 'Storage',
+    icon: 'warehouse',
+    description: 'Proper preservation methods',
+  },
 
-// Calculate card width for 2 columns with proper spacing
-// Total padding: 20 (scrollView padding) * 2 = 40, gap between cards: 12
-const CARD_WIDTH = (width - 40 - 12) / 2; // width - (horizontal padding) - (gap)
+  // === SOIL HEALTH ===
+  {
+    id: 'soil-test',
+    label: 'Soil Test',
+    icon: 'flask-empty',
+    description: 'Nutrient & pH analysis',
+  },
+  {
+    id: 'composting',
+    label: 'Composting',
+    icon: 'leaf',
+    description: 'Organic matter application',
+  },
+
+  // === PROTECTION ===
+  {
+    id: 'netting',
+    label: 'Netting',
+    icon: 'shield',
+    description: 'Bird & insect protection',
+  },
+  {
+    id: 'greenhouse',
+    label: 'Greenhouse',
+    icon: 'home-modern',
+    description: 'Controlled environment growing',
+  },
+];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -103,12 +247,14 @@ export default function CultivationTips({ onClose }: Props) {
   const [selectedCrop, setSelectedCrop] = useState<any>(null);
   const [selectedStage, setSelectedStage] = useState<GrowthStage | null>(null);
   const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     const fetchCountry = async () => {
       const address = await getAddress();
       setCountry(address?.country || "International");
+      setCity(address?.city || "International");
     };
     fetchCountry();
   }, []);
@@ -132,50 +278,6 @@ export default function CultivationTips({ onClose }: Props) {
   const closeConfirmModal = () => {
     setShowConfirmModal(false);
     setSelectedStage(null);
-  };
-
-  // Split stages into rows of 2 for better layout control
-  const renderStageRows = () => {
-    const rows = [];
-    for (let i = 0; i < GROWTH_STAGES.length; i += 2) {
-      const rowStages = GROWTH_STAGES.slice(i, i + 2);
-      rows.push(
-        <View key={i} style={styles.stageRow}>
-          {rowStages.map(stage => {
-            const isDisabled = !selectedCrop;
-            return (
-              <TouchableOpacity
-                key={stage.id}
-                style={[
-                  styles.stageCard,
-                  isDisabled && styles.stageCardDisabled,
-                ]}
-                onPress={() => handleStageSelect(stage)}
-                disabled={isDisabled}
-                activeOpacity={0.85}
-              >
-                <View style={styles.stageIcon}>
-                  <MaterialCommunityIcons
-                    name={stage.icon}
-                    size={32}
-                    color={theme.colors.secondary}
-                  />
-                </View>
-                <Text style={styles.stageLabel}>
-                  {stage.label}
-                </Text>
-                <Text style={styles.stageDescription}>
-                  {stage.description}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-          {/* Add empty placeholder if only one item in row to maintain layout */}
-          {rowStages.length === 1 && <View style={[styles.stageCard, styles.stageCardPlaceholder]} />}
-        </View>
-      );
-    }
-    return rows;
   };
 
   return (
@@ -206,15 +308,46 @@ export default function CultivationTips({ onClose }: Props) {
 
         {/* Growth Stage Selection */}
         <View style={[styles.cardtwo]}>
-          <Text style={styles.label}>Growth Stages</Text>
+          <Text style={styles.label}>Crop Stages</Text>
           <Text style={styles.subLabel}>
             {selectedCrop 
               ? `Select a stage to get cultivation tips for ${selectedCrop.name}`
               : 'Please select a crop first'}
           </Text>
           
-          <View style={styles.stageGrid}>
-            {renderStageRows()}
+          <View style={styles.stageList}>
+            {GROWTH_STAGES.map(stage => {
+              const isDisabled = !selectedCrop;
+              
+              return (
+                <TouchableOpacity
+                  key={stage.id}
+                  style={[
+                    styles.stageCard,
+                    isDisabled && styles.stageCardDisabled,
+                  ]}
+                  onPress={() => handleStageSelect(stage)}
+                  disabled={isDisabled}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.stageIcon}>
+                    <MaterialCommunityIcons
+                      name={stage.icon}
+                      size={24}
+                      color={theme.colors.secondary}
+                    />
+                  </View>
+                  <View style={styles.stageHeadDesc}>
+                    <Text style={styles.stageLabel}>
+                      {stage.label}
+                    </Text>
+                    <Text style={styles.stageDescription}>
+                      {stage.description}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       </ScrollView>
@@ -227,7 +360,9 @@ export default function CultivationTips({ onClose }: Props) {
           cropName={selectedCrop.name}
           diseaseType={selectedStage.label}
           country={country}
+          city={city}
           ModalHeading="Cultivation Tips"
+          ModalParent="CultivationTips"
         />
       )}
     </View>
@@ -299,56 +434,46 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginBottom: 16,
   },
-  stageGrid: {
+  stageList: {
     flexDirection: 'column',
-  },
-  stageRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    gap: 12,
   },
   stageCard: {
-    flex: 1,
+    width: "100%",
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: theme.colors.tertiary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'column',
-    minHeight: 140,
-  },
-  stageCardPlaceholder: {
-    opacity: 0,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
+    alignItems: 'flex-start',
+    flexDirection: 'row',
   },
   stageCardDisabled: {
     opacity: 0.5,
   },
   stageIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: theme.colors.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 0,
+  },
+  stageHeadDesc: {
+    alignItems: 'flex-start',
+    marginLeft: 10,
+    flex: 1,
   },
   stageLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: theme.colors.secondary,
-    textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   stageDescription: {
     fontSize: 11,
     color: theme.colors.secondary,
     opacity: 0.7,
-    textAlign: 'center',
-    lineHeight: 14,
   },
 });

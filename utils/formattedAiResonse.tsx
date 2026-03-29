@@ -60,9 +60,10 @@ export const formatAnalysisResponse = (text: string) => {
 
   // 2. Updated Regex to capture:
   // - Standard bold: **text**
+  // - Single asterisk bold: *text*
   // - New lines: \n
   // - Bullet/Numbered lines ending in colon: (* Title: or 1. Title:)
-  const parts = cleanedText.split(/(\*\*[^*]+\*\*|\n|^[\s]*(?:[-*•]|\d+\.)\s[^*:\n]+:)/gm);
+  const parts = cleanedText.split(/(\*\*[^*]+\*\*|\*[^*]+\*|\n|^[\s]*(?:[-*•]|\d+\.)\s[^*:\n]+:)/gm);
 
   return (
     <Text style={styles.baseText}>
@@ -79,6 +80,15 @@ export const formatAnalysisResponse = (text: string) => {
           return (
             <Text key={index} style={styles.boldText}>
               {part.replace(/\*\*/g, "")}
+            </Text>
+          );
+        }
+
+        // Handle Single Asterisk Bold (*Bold*)
+        if (part.startsWith("*") && part.endsWith("*") && !part.startsWith("**")) {
+          return (
+            <Text key={index} style={styles.boldText}>
+              {part.replace(/^\*|\*$/g, "")}
             </Text>
           );
         }
@@ -101,6 +111,20 @@ export const formatAnalysisResponse = (text: string) => {
           return <Text key={index}>{bulletContent}</Text>;
         }
 
+        // Handle text with colon - make ONLY the word before colon bold, keep colon and after normal
+        if (part.includes(":")) {
+          const colonIndex = part.indexOf(":");
+          const beforeColon = part.substring(0, colonIndex + 1);
+          const afterColon = part.substring(colonIndex + 1);
+          
+          return (
+            <Text key={index}>
+              <Text style={styles.boldText}>{beforeColon}</Text>
+              {afterColon}
+            </Text>
+          );
+        }
+
         // Normal Text
         return <Text key={index}>{part}</Text>;
       })}
@@ -111,7 +135,7 @@ export const formatAnalysisResponse = (text: string) => {
 const styles = StyleSheet.create({
   baseText: {
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: 30,
   },
   boldText: {
     fontWeight: "700",

@@ -1,14 +1,18 @@
 // components/Reusable/DiagnosisModal.tsx
+import { formatAnalysisResponse } from '@/utils/formattedAiResonse';
 import { theme } from '@/utils/theme';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    Modal,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface DiagnosisModalProps {
@@ -17,7 +21,15 @@ interface DiagnosisModalProps {
   cropName: string;
   diseaseType: string;
   country: string;
-  ModalHeading: string
+  city: string;
+  ModalHeading: string;
+  ModalParent: string;
+}
+
+interface TipsData {
+  success: boolean;
+  data: string;
+  cached?: boolean;
 }
 
 export default function DiagnosisModal({
@@ -26,8 +38,115 @@ export default function DiagnosisModal({
   cropName,
   diseaseType,
   country,
-  ModalHeading
+  city,
+  ModalHeading,
+  ModalParent
 }: DiagnosisModalProps) {
+  const [loading, setLoading] = useState(false);
+  const [tipsData, setTipsData] = useState<TipsData | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      if (ModalParent === 'CultivationTips') {
+        fetchCultivationTips();
+      } else if (ModalParent === 'PestsAndDisease') {
+        fetchPestsAndDisease();
+      }
+    }
+  }, [visible, ModalParent]);
+
+  const fetchCultivationTips = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('https://florix-backend.vercel.app/api/v1/tools/getCultivationTips', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          country: country || 'International',
+          city: city || 'International',
+          plant: cropName,
+          UserSelectedTip: diseaseType
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setTipsData(data);
+      } else {
+        Alert.alert('Error', 'Failed to fetch cultivation tips');
+      }
+    } catch (error) {
+      console.error('Error fetching tips:', error);
+      Alert.alert('Error', 'Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPestsAndDisease = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('https://florix-backend.vercel.app/api/v1/tools/getPestsAndDiseases', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          country: country || 'International',
+          plant: cropName,
+          city: city || 'International',
+          UserSelectedDisease: diseaseType
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setTipsData(data);
+      } else {
+        Alert.alert('Error', 'Failed to fetch pests and disease information');
+      }
+    } catch (error) {
+      console.error('Error fetching pests and disease:', error);
+      Alert.alert('Error', 'Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>
+            {ModalParent === 'CultivationTips' ? 'Fetching cultivation tips...' : 'Fetching pest and disease information...'}
+          </Text>
+        </View>
+      );
+    }
+
+    if (!tipsData?.data) {
+      return (
+        <View style={styles.emptyContainer}>
+          <MaterialCommunityIcons name="leaf-off" size={64} color={theme.colors.tertiary} />
+          <Text style={styles.emptyText}>
+            {ModalParent === 'CultivationTips' ? 'No tips available' : 'No information available'}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {formatAnalysisResponse(tipsData.data)}
+      </ScrollView>
+    );
+  };
+
   return (
     <Modal
       visible={visible}
@@ -36,7 +155,7 @@ export default function DiagnosisModal({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.fourthly} />
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -48,38 +167,20 @@ export default function DiagnosisModal({
 
         {/* Content */}
         <View style={styles.content}>
-          {/* Crop Info */}
-          <View style={styles.infoCard}>
-            <View style={styles.infoIconContainer}>
-              <MaterialCommunityIcons name="leaf" size={28} color={theme.colors.primary} />
-            </View>
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Selected Crop</Text>
-              <Text style={styles.infoValue}>{cropName}</Text>
-            </View>
-          </View>
+          {/* Main Heading */}
+          <Text style={styles.mainHeading}>
+            {ModalParent === 'CultivationTips' 
+              ? `${diseaseType} stage of ${cropName}`
+              : `${diseaseType} in ${cropName}`}
+          </Text>
+          
+          {/* Subtitle */}
+          <Text style={styles.subHeading}>
+            {`${city}, ${country}`}
+          </Text>
 
-          {/* Disease Category Info */}
-          <View style={styles.infoCard}>
-            <View style={styles.infoIconContainer}>
-              <MaterialCommunityIcons name="bug" size={28} color={theme.colors.primary} />
-            </View>
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Pest/Disease Category</Text>
-              <Text style={styles.infoValue}>{diseaseType}</Text>
-            </View>
-          </View>
-
-          {/* Country Info */}
-          <View style={styles.infoCard}>
-            <View style={styles.infoIconContainer}>
-              <MaterialCommunityIcons name="map-marker" size={28} color={theme.colors.primary} />
-            </View>
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Location</Text>
-              <Text style={styles.infoValue}>{country || 'International'}</Text>
-            </View>
-          </View>
+          {/* Tips Content */}
+          {renderContent()}
         </View>
       </View>
     </Modal>
@@ -89,7 +190,7 @@ export default function DiagnosisModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.fourthly,
   },
   header: {
     flexDirection: 'row',
@@ -100,7 +201,7 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.tertiary,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.fourthly,
   },
   headerTitle: {
     fontSize: 20,
@@ -115,44 +216,78 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
-  infoCard: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
+  mainHeading: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: theme.colors.secondary,
+    marginBottom: 8,
+    lineHeight: 32,
+  },
+  subHeading: {
+    fontSize: 16,
+    color: theme.colors.primary,
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.tertiary,
+  },
+  sectionCard: {
+    backgroundColor: theme.colors.fourthly,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: theme.colors.tertiary,
-    shadowColor: theme.colors.secondary,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  infoIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.colors.tertiary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  infoTextContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  infoLabel: {
-    fontSize: 12,
-    color: theme.colors.secondary,
-    opacity: 0.7,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  infoValue: {
+  sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: theme.colors.secondary,
+    marginBottom: 12,
+  },
+  sectionText: {
+    fontSize: 14,
+    color: theme.colors.secondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  bulletPoint: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    paddingLeft: 8,
+  },
+  bulletDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.primary,
+    marginTop: 6,
+    marginRight: 12,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 14,
+    color: theme.colors.secondary,
+    lineHeight: 20,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: theme.colors.secondary,
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: theme.colors.secondary,
+    opacity: 0.5,
   },
 });

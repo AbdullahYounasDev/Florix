@@ -111,18 +111,36 @@ export const formatAnalysisResponse = (text: string) => {
           return <Text key={index}>{bulletContent}</Text>;
         }
 
-        // Handle text with colon - make ONLY the word before colon bold, keep colon and after normal
+        // Handle text with colon - apply dot rule
         if (part.includes(":")) {
           const colonIndex = part.indexOf(":");
           const beforeColon = part.substring(0, colonIndex + 1);
           const afterColon = part.substring(colonIndex + 1);
           
-          return (
-            <Text key={index}>
-              <Text style={styles.boldText}>{beforeColon}</Text>
-              {afterColon}
-            </Text>
-          );
+          // Check if there's a dot before the colon
+          const lastDotIndex = beforeColon.lastIndexOf(".");
+          
+          if (lastDotIndex !== -1) {
+            // If dot exists, split at the dot
+            const beforeDot = beforeColon.substring(0, lastDotIndex + 1);
+            const betweenDotAndColon = beforeColon.substring(lastDotIndex + 1);
+            
+            return (
+              <Text key={index}>
+                <Text>{beforeDot}</Text>
+                <Text style={styles.boldText}>{betweenDotAndColon}</Text>
+                {afterColon}
+              </Text>
+            );
+          } else {
+            // No dot, make everything before colon bold
+            return (
+              <Text key={index}>
+                <Text style={styles.boldText}>{beforeColon}</Text>
+                {afterColon}
+              </Text>
+            );
+          }
         }
 
         // Normal Text

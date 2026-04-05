@@ -81,22 +81,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      
-      <Tabs.Screen
-        name="debug"
-        options={{
-          title: 'Developer',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={focused ? styles.selectedTab : undefined}>
-              <Ionicons 
-                name={focused ? "bug" : "bug-outline"} 
-                size={focused ? 24 : 22} 
-                color={focused ? '#FFFFFF' : color} 
-              />
-            </View>
-          ),
-        }}
-      />
     </Tabs>
   );
 }

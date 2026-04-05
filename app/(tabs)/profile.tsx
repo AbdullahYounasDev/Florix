@@ -39,7 +39,7 @@ export default function ProfileScreen() {
       };
 
       const result = await Share.share(shareOptions);
-      
+
       if (result.action === Share.sharedAction) {
         if (result.activityType) {
           // Shared with specific activity type (WhatsApp, etc.)
@@ -60,9 +60,9 @@ export default function ProfileScreen() {
   const shareToWhatsApp = async () => {
     try {
       const message = `🌱 Discover Florix - Your Smart Farming Assistant! 🚜\n\nJoin me in using Florix to get:\n• Plant disease detection\n• AI farming advice\n• Weather updates\n• Market prices\n\nDownload now: https://play.google.com/store/apps/details?id=com.florix.app`;
-      
+
       const url = `whatsapp://send?text=${encodeURIComponent(message)}`;
-      
+
       const canOpen = await Linking.canOpenURL(url);
       if (canOpen) {
         await Linking.openURL(url);
@@ -81,10 +81,10 @@ export default function ProfileScreen() {
   const shareToMessenger = async () => {
     try {
       const message = `🌱 Discover Florix - Your Smart Farming Assistant! 🚜\n\nJoin me in using Florix to get:\n• Plant disease detection\n• AI farming advice\n• Weather updates\n• Market prices\n\nDownload now: https://play.google.com/store/apps/details?id=com.florix.app`;
-      
+
       // For Facebook Messenger
       const url = `fb-messenger://share?link=${encodeURIComponent('https://play.google.com/store/apps/details?id=com.florix.app')}&app_id=123456789`; // Replace with actual app ID if available
-      
+
       const canOpen = await Linking.canOpenURL(url);
       if (canOpen) {
         await Linking.openURL(url);
@@ -99,31 +99,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const openShareOptions = () => {
-    Alert.alert(
-      'Share Florix',
-      'Choose how you want to share the app:',
-      [
-        {
-          text: 'WhatsApp',
-          onPress: shareToWhatsApp
-        },
-        {
-          text: 'Messenger',
-          onPress: shareToMessenger
-        },
-        {
-          text: 'Other Apps',
-          onPress: shareApp
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-      ],
-      { cancelable: true }
-    );
-  };
 
   const submitFeedback = () => {
     if (feedback.trim() === '') {
@@ -160,181 +135,184 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.container} >
       {/* Header */}
-      <AppHeader title='Profile' page='profile'/>
+      <AppHeader title='Profile' page='profile' />
 
-      {/* Section 1: User Details */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Personal Information</Text>
-        
-        <View style={styles.detailItem}>
-          <View style={styles.detailIcon}>
-            <Ionicons name="person-outline" size={20} color="#5D8A6F" />
-          </View>
-          <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>Full Name</Text>
-            <Text style={styles.detailValue}>{userData.name}</Text>
-          </View>
-          <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.editText}>Edit</Text>
-          </TouchableOpacity>
-        </View>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 
-        <View style={styles.detailItem}>
-          <View style={styles.detailIcon}>
-            <Ionicons name="mail-outline" size={20} color="#5D8A6F" />
-          </View>
-          <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>Email Address</Text>
-            <Text style={styles.detailValue}>{userData.email}</Text>
-          </View>
-        </View>
+        {/* Section 1: User Details */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Personal Information</Text>
 
-        <View style={styles.detailItem}>
-          <View style={styles.detailIcon}>
-            <Ionicons name="call-outline" size={20} color="#5D8A6F" />
-          </View>
-          <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>Mobile Number</Text>
-            <Text style={styles.detailValue}>{userData.mobile}</Text>
-          </View>
-          <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.editText}>Edit</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.detailItem}>
-          <View style={styles.detailIcon}>
-            <Ionicons name="location-outline" size={20} color="#5D8A6F" />
-          </View>
-          <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>Farm Address</Text>
-            <Text style={styles.detailValue}>{userData.address}</Text>
-          </View>
-          <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.editText}>Edit</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.detailItem}>
-          <View style={styles.detailIcon}>
-            <Ionicons name="calendar-outline" size={20} color="#5D8A6F" />
-          </View>
-          <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>Member Since</Text>
-            <Text style={styles.detailValue}>{userData.joinDate}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Section 2: Share App */}
-      <View style={styles.section}>
-        <View style={styles.shareContainer}>
-          <View style={styles.shareIconContainer}>
-            <Ionicons name="share-social" size={32} color="#FFFFFF" />
-          </View>
-          <View style={styles.shareContent}>
-            <Text style={styles.shareTitle}>Share the Green Revolution!</Text>
-            <Text style={styles.shareDescription}>
-              Help other farmers discover Florix and transform their farming experience
-            </Text>
-          </View>
-          {/* Quick Share */}
-          <View style={styles.quickShareContainer}>
-          <Text style={styles.quickShareTitle}>Share via</Text>
-          <View style={styles.quickShareButtons}>
-            <TouchableOpacity style={styles.quickShareButton} onPress={shareToWhatsApp}>
-              <FontAwesome name="whatsapp" size={24} color="#25D366" />
-              <Text style={styles.quickShareText}>WhatsApp</Text>
-            </TouchableOpacity>            
-            <TouchableOpacity style={styles.quickShareButton} onPress={shareApp}>
-              <Ionicons name="share-outline" size={24} color="#5D8A6F" />
-              <Text style={styles.quickShareText}>Other Apps</Text>
+          <View style={styles.detailItem}>
+            <View style={styles.detailIcon}>
+              <Ionicons name="person-outline" size={20} color="#5D8A6F" />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Full Name</Text>
+              <Text style={styles.detailValue}>{userData.name}</Text>
+            </View>
+            <TouchableOpacity style={styles.editButton}>
+              <Text style={styles.editText}>Edit</Text>
             </TouchableOpacity>
           </View>
-        </View>
-        </View>        
-      </View>
 
-      {/* Section 3: Feedback */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>We Value Your Feedback</Text>
-        <Text style={styles.feedbackDescription}>
-          Your suggestions help us improve Florix and serve you better
-        </Text>
-        
-        <TouchableOpacity 
-          style={styles.feedbackButton}
-          onPress={() => setFeedbackModalVisible(true)}
+          <View style={styles.detailItem}>
+            <View style={styles.detailIcon}>
+              <Ionicons name="mail-outline" size={20} color="#5D8A6F" />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Email Address</Text>
+              <Text style={styles.detailValue}>{userData.email}</Text>
+            </View>
+          </View>
+
+          <View style={styles.detailItem}>
+            <View style={styles.detailIcon}>
+              <Ionicons name="call-outline" size={20} color="#5D8A6F" />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Mobile Number</Text>
+              <Text style={styles.detailValue}>{userData.mobile}</Text>
+            </View>
+            <TouchableOpacity style={styles.editButton}>
+              <Text style={styles.editText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.detailItem}>
+            <View style={styles.detailIcon}>
+              <Ionicons name="location-outline" size={20} color="#5D8A6F" />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Farm Address</Text>
+              <Text style={styles.detailValue}>{userData.address}</Text>
+            </View>
+            <TouchableOpacity style={styles.editButton}>
+              <Text style={styles.editText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.detailItem}>
+            <View style={styles.detailIcon}>
+              <Ionicons name="calendar-outline" size={20} color="#5D8A6F" />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Member Since</Text>
+              <Text style={styles.detailValue}>{userData.joinDate}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Section 2: Share App */}
+        <View style={styles.section}>
+          <View style={styles.shareContainer}>
+            <View style={styles.shareIconContainer}>
+              <Ionicons name="share-social" size={32} color="#FFFFFF" />
+            </View>
+            <View style={styles.shareContent}>
+              <Text style={styles.shareTitle}>Share the Green Revolution!</Text>
+              <Text style={styles.shareDescription}>
+                Help other farmers discover Florix and transform their farming experience
+              </Text>
+            </View>
+            {/* Quick Share */}
+            <View style={styles.quickShareContainer}>
+              <Text style={styles.quickShareTitle}>Share via</Text>
+              <View style={styles.quickShareButtons}>
+                <TouchableOpacity style={styles.quickShareButton} onPress={shareToWhatsApp}>
+                  <FontAwesome name="whatsapp" size={24} color="#25D366" />
+                  <Text style={styles.quickShareText}>WhatsApp</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.quickShareButton} onPress={shareApp}>
+                  <Ionicons name="share-outline" size={24} color="#5D8A6F" />
+                  <Text style={styles.quickShareText}>Other Apps</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Section 3: Feedback */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>We Value Your Feedback</Text>
+          <Text style={styles.feedbackDescription}>
+            Your suggestions help us improve Florix and serve you better
+          </Text>
+
+          <TouchableOpacity
+            style={styles.feedbackButton}
+            onPress={() => setFeedbackModalVisible(true)}
+          >
+            <View style={styles.feedbackButtonContent}>
+              <Ionicons name="chatbubble-ellipses-outline" size={24} color="#5D8A6F" />
+              <View style={styles.feedbackButtonText}>
+                <Text style={styles.feedbackButtonTitle}>Share Your Thoughts</Text>
+                <Text style={styles.feedbackButtonSubtitle}>Help us improve your experience</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#A1887F" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Feedback Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={feedbackModalVisible}
+          onRequestClose={() => setFeedbackModalVisible(false)}
         >
-          <View style={styles.feedbackButtonContent}>
-            <Ionicons name="chatbubble-ellipses-outline" size={24} color="#5D8A6F" />
-            <View style={styles.feedbackButtonText}>
-              <Text style={styles.feedbackButtonTitle}>Share Your Thoughts</Text>
-              <Text style={styles.feedbackButtonSubtitle}>Help us improve your experience</Text>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Share Feedback</Text>
+                <TouchableOpacity
+                  onPress={() => setFeedbackModalVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <Ionicons name="close" size={24} color="#37474F" />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.ratingLabel}>How would you rate your experience?</Text>
+              {renderStars()}
+
+              <Text style={styles.feedbackLabel}>Your Feedback</Text>
+              <TextInput
+                style={styles.feedbackInput}
+                value={feedback}
+                onChangeText={setFeedback}
+                placeholder="Tell us what you think about Florix..."
+                placeholderTextColor="#A1887F"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setFeedbackModalVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    feedback.trim() === '' && styles.submitButtonDisabled
+                  ]}
+                  onPress={submitFeedback}
+                  disabled={feedback.trim() === ''}
+                >
+                  <Text style={styles.submitButtonText}>Submit</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#A1887F" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Feedback Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={feedbackModalVisible}
-        onRequestClose={() => setFeedbackModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Share Feedback</Text>
-              <TouchableOpacity 
-                onPress={() => setFeedbackModalVisible(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color="#37474F" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.ratingLabel}>How would you rate your experience?</Text>
-            {renderStars()}
-
-            <Text style={styles.feedbackLabel}>Your Feedback</Text>
-            <TextInput
-              style={styles.feedbackInput}
-              value={feedback}
-              onChangeText={setFeedback}
-              placeholder="Tell us what you think about Florix..."
-              placeholderTextColor="#A1887F"
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={styles.cancelButton}
-                onPress={() => setFeedbackModalVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[
-                  styles.submitButton,
-                  feedback.trim() === '' && styles.submitButtonDisabled
-                ]}
-                onPress={submitFeedback}
-                disabled={feedback.trim() === ''}
-              >
-                <Text style={styles.submitButtonText}>Submit</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        </Modal>
+      </ScrollView>
+    </View>
   );
 }
 

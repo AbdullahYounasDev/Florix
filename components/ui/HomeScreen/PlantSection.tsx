@@ -78,13 +78,6 @@ export default function PlantSection() {
   };
 
   // ==============================
-  // Deselect All inside modal only
-  // ==============================
-  const deselectAllInModal = () => {
-    setModalSelectedPlants([]);
-  };
-
-  // ==============================
   // Done → save to AsyncStorage + update main state
   // ==============================
   const handleDone = async () => {
@@ -98,6 +91,14 @@ export default function PlantSection() {
       Alert.alert("Error", "Failed to save selected plants.");
     }
   };
+
+  // ==============================
+  // Close modal without saving
+  // ==============================
+  const handleClose = () => {
+    setShowSelectorModal(false);
+  };
+
 
   return (
     <>
@@ -142,18 +143,9 @@ export default function PlantSection() {
         <PlantsSelector
           selectedPlants={modalSelectedPlants.map(p => p.id)}
           onPlantToggle={togglePlantInModal}
-          onDeselectAll={deselectAllInModal}
+          onDone={handleDone}
           categories={plantCategories as PlantCategory[]}
-          onContinue={handleDone}
-          onBack={() => setShowSelectorModal(false)}
-          showHeader
-          showSelectionSummary
-          showActions
-          continueButtonText="Done"
-          backButtonText="Cancel"
-          title="Manage Plants"
-          subtitle="Add or remove plants from your collection"
-          page="home"
+          onClose={handleClose}
         />
       </Modal>
     </>

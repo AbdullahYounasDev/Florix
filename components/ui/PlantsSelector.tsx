@@ -1,5 +1,5 @@
 import { theme } from '@/utils/theme';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import React from 'react';
 import {
   ScrollView,
@@ -23,112 +23,91 @@ export type PlantCategory = {
 type PlantsSelectorProps = {
   selectedPlants: string[];
   onPlantToggle: (plantId: string) => void;
-  onDeselectAll?: () => void;
-  showHeader?: boolean;
-  showSelectionSummary?: boolean;
-  showActions?: boolean;
-  onContinue?: () => void;
-  onBack?: () => void;
-  continueButtonText?: string;
-  backButtonText?: string;
+  onDone: () => void;
   categories: PlantCategory[];
-  title?: string;
-  subtitle?: string;
-  page?: string
+  onClose?: () => void;
 };
 
 export default function PlantsSelector({
   selectedPlants,
   onPlantToggle,
-  onDeselectAll,
-  showHeader = true,
-  showSelectionSummary = true,
-  showActions = true,
-  onContinue,
-  onBack,
-  continueButtonText = 'Continue',
-  backButtonText = 'Back',
+  onDone,
   categories,
-  title = 'Select Your Crops',
-  subtitle = 'Choose the plants you cultivate for personalized advice',
-  page = 'onboarding'
+  onClose
 }: PlantsSelectorProps) {
   const handleDeselectAll = () => {
-    if (onDeselectAll) {
-      onDeselectAll();
-    }
+    selectedPlants.forEach(plantId => onPlantToggle(plantId));
   };
 
   const isSelected = selectedPlants.length > 0;
 
   return (
     <View style={styles.container}>
-      {showHeader && (
-        <>
-          <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.title}>Select Your Crops</Text>
+        </View>
+        {onClose && (
+          <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.85}>
+            <Feather name="x" size={22} color={theme.colors.secondary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
+        {/* Selection Summary Card - Enhanced Design */}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryLeft}>
+              <Feather name="check-circle" size={20} color={theme.colors.primary} />
+            <Text style={styles.selectionCount}>
+              {selectedPlants.length} of 9 crops selected
+            </Text>
           </View>
-          <Text style={styles.subtitle}>{subtitle}</Text>
-        </>
-      )}
-
-      {showSelectionSummary && (
-        <View style={styles.selectionSummary}>
-          <Text
-            style={[
-              styles.selectionCount
-            ]}
-          >{selectedPlants.length}/9 selected
-          </Text>
-
           {isSelected && (
             <TouchableOpacity
               onPress={handleDeselectAll}
-              style={styles.selectAllButton}
+              style={styles.deselectButton}
               activeOpacity={0.85}
             >
-              <Text style={styles.selectAllText}>
-                Deselect All
-              </Text>
+              <Text style={styles.deselectText}>Deselect All</Text>
             </TouchableOpacity>
           )}
         </View>
-      )}
 
-      <ScrollView
-        style={styles.cropsContainer}
-        showsVerticalScrollIndicator={false}
-      >
+        {/* Categories and Crops - 4 per row */}
         {categories.map((category) => (
-          <View key={category.region} style={styles.regionSection}>
-            <Text style={styles.regionTitle}>{category.region}</Text>
+          <View key={category.region} style={styles.categorySection}>
+            <Text style={styles.categoryTitle}>{category.region}</Text>
+            <View style={styles.divider} />
+            
             <View style={styles.cropsGrid}>
               {category.crops.map((crop) => {
-                const isSelected = selectedPlants.includes(crop.id);
+                const isCropSelected = selectedPlants.includes(crop.id);
                 return (
                   <TouchableOpacity
-                   activeOpacity={0.85}
                     key={crop.id}
                     style={[
-                      styles.cropButton,
-                      isSelected && styles.selectedCropButton
+                      styles.cropCard,
+                      isCropSelected && styles.cropCardSelected
                     ]}
                     onPress={() => onPlantToggle(crop.id)}
+                    activeOpacity={0.85}
                   >
-                    <View style={styles.cropIconContainer}>
+                    <View style={styles.cropIconWrapper}>
                       <Text style={styles.cropIcon}>{crop.icon}</Text>
-                      {isSelected && (
-                        <View style={styles.checkmarkOverlay}>
-                          <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
-                        </View>
-                      )}
                     </View>
                     <Text style={[
                       styles.cropName,
-                      isSelected && styles.selectedCropName
+                      isCropSelected && styles.cropNameSelected
                     ]}>
                       {crop.name}
                     </Text>
+                    {isCropSelected && (
+                      <View style={styles.selectedOverlay}>
+                        <Feather name="check" size={16} color="#FFFFFF" />
+                      </View>
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -137,209 +116,209 @@ export default function PlantsSelector({
         ))}
       </ScrollView>
 
-      {showActions && (onContinue || onBack) && (
-        <View style={styles.navigationRow}>
-          {onBack && (page === 'onboarding') && (
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={onBack}
-            >
-              <Ionicons name="arrow-back" size={20} color="#8B4513" />
-              <Text style={styles.backButtonText}>{backButtonText}</Text>
-            </TouchableOpacity>
+      {/* Footer with Done Button */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[
+            styles.doneButton,
+            selectedPlants.length === 0 && styles.doneButtonDisabled
+          ]}
+          onPress={onDone}
+          disabled={selectedPlants.length === 0}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.doneButtonText}>Done</Text>
+          {selectedPlants.length > 0 && (
+            <Feather name="check" size={18} color="#FFFFFF" style={styles.doneIcon} />
           )}
-
-          {onContinue && (
-            <TouchableOpacity
-              style={[
-                styles.continueButton,
-                selectedPlants.length === 0 && styles.continueButtonDisabled
-              ]}
-              onPress={onContinue}
-              disabled={selectedPlants.length === 0}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.continueButtonText}>
-                {continueButtonText}
-              </Text>
-              {selectedPlants.length > 0 && (
-                <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 15,
-    paddingTop: 35,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.tertiary,
+    backgroundColor: '#FFFFFF',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '700',
     color: theme.colors.secondary,
+  },
+  closeButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  scrollView: {
     flex: 1,
-    textAlign: 'center',
+    padding: 16,
   },
-  subtitle: {
-    fontSize: 16,
-    color: theme.colors.secondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 20,
-    marginHorizontal: 15,
-  },
-  selectionSummary: {
+  // Enhanced Summary Card
+  summaryCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#E8F5E8',
+    justifyContent: 'space-between',
+    backgroundColor: theme.colors.tertiary,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: theme.colors.primary + '20', // 20% opacity
+  },
+  summaryLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  selectionCount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.secondary,
+  },
+  deselectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.colors.primary,
-    marginBottom: 25,
-    marginHorizontal: 15,
   },
-  selectionCount: {
-    fontSize: 16,
+  deselectText: {
+    fontSize: 13,
     fontWeight: '600',
     color: theme.colors.primary,
   },
-  selectAllButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
+  // Category Section
+  categorySection: {
+    marginBottom: 28,
   },
-  selectAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.primary,
-  },
-  cropsContainer: {
-    flex: 1,
-    marginBottom: 20,
-    paddingHorizontal: 10,
-  },
-  regionSection: {
-    marginBottom: 25,
-  },
-  regionTitle: {
-    fontSize: 20,
+  categoryTitle: {
+    fontSize: 18,
     fontWeight: '600',
     color: theme.colors.secondary,
-    marginBottom: 15,
-    paddingLeft: 8,
+    marginBottom: 8,
   },
+  divider: {
+    height: 2,
+    width: 40,
+    backgroundColor: theme.colors.primary,
+    marginBottom: 16,
+    borderRadius: 2,
+  },
+  // Crops Grid - 4 per row
   cropsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 3,
+    justifyContent: 'flex-start',
+    gap: 12,
   },
-  cropButton: {
-    width: '23%',
+  cropCard: {
+    width: '22%', // 4 cards per row (22% + gap = ~25% each)
     alignItems: 'center',
     paddingVertical: 12,
+    paddingHorizontal: 6,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E8F5E8',
-    marginBottom: 12,
-  },
-  selectedCropButton: {
-    backgroundColor: '#E8F5E8',
-    borderColor: theme.colors.primary,
-    borderWidth: 1,
-  },
-  cropIconContainer: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: theme.colors.tertiary,
     position: 'relative',
-    marginBottom: 8,
+  },
+  cropCardSelected: {
+    backgroundColor: theme.colors.tertiary,
+    borderColor: theme.colors.primary,
+    borderWidth: 1.5,
+  },
+  cropIconWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cropIcon: {
     fontSize: 32,
   },
-  checkmarkOverlay: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-  },
   cropName: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     color: theme.colors.secondary,
     textAlign: 'center',
   },
-  selectedCropName: {
+  cropNameSelected: {
     color: theme.colors.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  navigationRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 15,
-    paddingTop: 0,
-    paddingBottom: 15
-  },
-  backButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F5E8D9',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  selectedOverlay: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 24,
+    height: 24,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#D7CCC8',
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#8B4513',
-    marginLeft: 8,
-  },
-  continueButton: {
-    flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: theme.colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
-    elevation: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    elevation: 3,
   },
-  continueButtonDisabled: {
-    backgroundColor: theme.colors.secondary,
-    opacity: 0.6,
+  // Footer
+  footer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.tertiary,
+    backgroundColor: '#FFFFFF',
   },
-  continueButtonText: {
+  doneButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  doneButtonDisabled: {
+    backgroundColor: theme.colors.secondary + '80', // 50% opacity
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  doneButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
-    marginRight: 8,
+  },
+  doneIcon: {
+    marginLeft: 4,
   },
 });

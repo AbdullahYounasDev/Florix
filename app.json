@@ -50,6 +50,12 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Florix to access your location for accurate weather updates."
+        }
       ]
     ],
     "experiments": {

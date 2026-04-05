@@ -1,3 +1,4 @@
+import { theme } from "@/utils/theme";
 import { getWeatherIcon } from "@/utils/weatherIcon";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -28,8 +29,8 @@ export const NextDaysForecast = ({ forecasts }: { forecasts: ForecastItem[] }) =
       style={styles.forecastContainer}
     >
       <View style={styles.forecastHeader}>
-        <Ionicons name="calendar-outline" size={18} color="#5D8A6F" />
-        <Text style={styles.forecastTitle}>Next 4 Days Forecast</Text>
+        <Ionicons name="calendar-outline" size={18} color={theme.colors.secondary} />
+        <Text style={styles.forecastTitle}>Next 6 Days Forecast</Text>
       </View>
       
       <ScrollView 
@@ -37,7 +38,7 @@ export const NextDaysForecast = ({ forecasts }: { forecasts: ForecastItem[] }) =
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.forecastScrollContent}
       >
-        {forecasts.map((day, index) => {
+        {forecasts.slice(1).map((day, index) => {
           const weatherIcon = getWeatherIcon(day.condition, 'd');
           return (
             <View key={index} style={styles.forecastDayCard}>

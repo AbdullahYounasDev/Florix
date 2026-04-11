@@ -12,7 +12,6 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DiseaseAlert from '../FlorixTools/DiseaseAlert/DiseaseAlert';
 
 const toolsData = [
   {
@@ -30,11 +29,11 @@ const toolsData = [
     title: 'Cultivation Tips',
     icon: <Ionicons name="bulb-outline" size={24} color={theme.colors.secondary} />,
   },
-  {
-    id: 'alert',
-    title: 'Disease Alert',
-    icon: <Ionicons name="notifications-outline" size={24} color={theme.colors.secondary} />,
-  },
+  // {
+  //   id: 'alert',
+  //   title: 'Disease Alert',
+  //   icon: <Ionicons name="notifications-outline" size={24} color={theme.colors.secondary} />,
+  // },
 ];
 
 export default function ToolsSection() {
@@ -120,7 +119,7 @@ export default function ToolsSection() {
       </Modal>
 
       {/* Disease Alert Modal */}
-      <Modal
+      {/* <Modal
         visible={alertModalVisible}
         animationType="slide"
         transparent={false}
@@ -131,7 +130,7 @@ export default function ToolsSection() {
         <SafeAreaView style={{ flex: 1 }}>
           <DiseaseAlert onClose={() => setAlertModalVisible(false)} />
         </SafeAreaView>
-      </Modal>
+      </Modal> */}
     </>
   );
 }

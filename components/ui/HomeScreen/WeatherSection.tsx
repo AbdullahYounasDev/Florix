@@ -25,6 +25,7 @@ export default function WeatherSection() {
   const [retryCount, setRetryCount] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [fullWeatherData, setFullWeatherData] = useState<any>(null);
+  const [loadingStage, setLoadingStage] = useState<'connecting' | 'locating' | 'fetching'>('connecting');
 
   // ─── Check Internet ───────────────────────────────────────────
   const checkInternet = async (): Promise<boolean> => {
@@ -44,6 +45,8 @@ export default function WeatherSection() {
       return { latitude: stored.latitude, longitude: stored.longitude };
     }
 
+    setLoadingStage('locating');
+    
     // 2. Request location permission
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
@@ -72,6 +75,7 @@ export default function WeatherSection() {
     try {
       setLoading(true);
       setErrorType(null);
+      setLoadingStage('connecting');
 
       // 1. Internet check
       const hasInternet = await checkInternet();
@@ -83,6 +87,8 @@ export default function WeatherSection() {
       // 2. Get coordinates
       const coords = await getCoords();
       if (!coords) return; // error already set inside getCoords
+
+      setLoadingStage('fetching');
 
       // 3. Fetch weather API
       const response = await fetch("https://florix-backend.vercel.app/api/v1/weather/getweather", {
@@ -121,12 +127,32 @@ export default function WeatherSection() {
 
   useEffect(() => { fetchWeather(); }, [retryCount]);
 
-  // ─── Loading ──────────────────────────────────────────────────
+  // ─── Loading State ─────────────────────────────────────────────
   if (loading) {
+    const loadingMessages = {
+      connecting: {
+        title: "Connecting...",
+        subtitle: "Establishing connection to weather service",
+      },
+      locating: {
+        title: "Locating...",
+        subtitle: "Finding your current location",
+      },
+      fetching: {
+        title: "Fetching...",
+        subtitle: "Getting latest weather data",
+      },
+    };
+
+    const currentStage = loadingMessages[loadingStage];
+
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#5D8A6F" />
-        <Text style={styles.loadingText}>Getting weather...</Text>
+      <View style={styles.loadingCard}>
+        <ActivityIndicator size="small" color={theme.colors.primary} />
+        <View style={styles.loadingContent}>
+          <Text style={styles.loadingTitle}>{currentStage.title}</Text>
+          <Text style={styles.loadingSubtitle}>{currentStage.subtitle}</Text>
+        </View>
       </View>
     );
   }
@@ -135,34 +161,29 @@ export default function WeatherSection() {
   if (errorType || !weatherData) {
     const errorConfig = {
       no_internet: {
-        icon: "wifi-outline" as const,
-        title: "No Internet",
-        subtitle: "Check your connection and tap to retry",
-        color: "#E53935",
+        title: "No connection",
+        subtitle: "Check internet to fetch forecast",
+        color: "#E74C3C",
       },
       no_permission: {
-        icon: "location-outline" as const,
-        title: "Location Access Denied",
-        subtitle: "Allow location permission and tap to retry",
-        color: "#F57C00",
+        title: "Location off",
+        subtitle: "Enable location for local weather",
+        color: "#E74C3C",
       },
       location_failed: {
-        icon: "navigate-outline" as const,
-        title: "Location Unavailable",
-        subtitle: "Couldn't get your location. Tap to retry",
-        color: "#F57C00",
+        title: "Can't find you",
+        subtitle: "Unable to get current location",
+        color: "#E74C3C",
       },
       api_failed: {
-        icon: "cloud-offline-outline" as const,
-        title: "Weather Unavailable",
-        subtitle: "Server error. Tap to try again",
-        color: "#D84315",
+        title: "Forecast unavailable",
+        subtitle: "Weather service is down",
+        color: "#E74C3C",
       },
       unknown: {
-        icon: "alert-circle-outline" as const,
-        title: "Something Went Wrong",
-        subtitle: "Tap to try again",
-        color: "#D84315",
+        title: "Weather error",
+        subtitle: "Couldn't load forecast",
+        color: "#E74C3C",
       },
     };
 
@@ -170,25 +191,31 @@ export default function WeatherSection() {
 
     return (
       <TouchableOpacity
-        style={styles.retryCard}
+        style={styles.errorCard}
         onPress={() => setRetryCount(c => c + 1)}
-        activeOpacity={0.85}
+        activeOpacity={0.7}
       >
-        <View style={[styles.errorIconWrapper, { backgroundColor: `${cfg.color}15` }]}>
-          <Ionicons name={cfg.icon} size={24} color={cfg.color} />
-        </View>
-
-        <View style={styles.retryTextWrapper}>
-          <Text style={[styles.retryTitle, { color: cfg.color }]}>{cfg.title}</Text>
-          <Text style={styles.retrySubtitle}>{cfg.subtitle}</Text>
-        </View>
-
-        <View style={styles.refreshBadge}>
-          <Ionicons name="refresh-outline" size={16} color={theme.colors.secondary} />
+        <View style={styles.errorContent}>
+          <View style={styles.errorHeader}>
+            <Ionicons 
+              name="cloud-offline-outline"
+              size={20} 
+              color={cfg.color} 
+            />
+            <Text style={[styles.errorTitle, { color: theme.colors.secondary }]}>
+              {cfg.title}
+            </Text>
+          </View>
+          <Text style={styles.errorSubtitle}>{cfg.subtitle}</Text>
+          <View style={styles.retryButton}>
+            <Text style={[styles.retryButtonText, { color: theme.colors.primary }]}>
+              Refresh
+            </Text>
+          </View>
         </View>
       </TouchableOpacity>
     );
-  }
+  };
 
   // ─── Success ──────────────────────────────────────────────────
   const icon = getWeatherIcon(weatherData.condition, weatherData.isDay ? "01d" : "01n");
@@ -242,72 +269,95 @@ export default function WeatherSection() {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    // marginVertical: 8,
-    marginTop:0,
+    marginTop: 0,
     marginBottom: 2,
   },
-  center: {
-    height: 80,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-  },
-  loadingText: {
-    fontSize: 12,
-    color: theme.colors.secondary,
-    fontWeight: "500",
-  },
-  retryCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
+  
+  // Loading Styles
+  loadingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.fourthly,
+    borderRadius: 20,
     marginVertical: 10,
     marginHorizontal: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    padding: 16,
     gap: 12,
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
         shadowRadius: 6,
       },
       android: { elevation: 2 },
     }),
   },
-  errorIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  retryTextWrapper: {
+  loadingContent: {
     flex: 1,
   },
-  retryTitle: {
+  loadingTitle: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: '500',
+    color: theme.colors.secondary,
+    marginBottom: 2,
   },
-  retrySubtitle: {
+  loadingSubtitle: {
     fontSize: 12,
     color: theme.colors.secondary,
-    marginTop: 2,
+    opacity: 0.7,
   },
-  refreshBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#F5F5F5",
-    justifyContent: "center",
-    alignItems: "center",
+  
+  // Error Styles
+  errorCard: {
+    backgroundColor: theme.colors.fourthly,
+    borderRadius: 20,
+    marginVertical: 10,
+    marginHorizontal: 14,
+    padding: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+      },
+      android: { elevation: 2 },
+    }),
   },
+  errorContent: {
+    gap: 8,
+  },
+  errorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  errorTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  errorSubtitle: {
+    fontSize: 13,
+    color: theme.colors.secondary,
+    opacity: 0.7,
+    lineHeight: 18,
+    paddingLeft: 28,
+  },
+  retryButton: {
+    paddingLeft: 28,
+    paddingTop: 4,
+  },
+  retryButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  // Success Styles
   mainContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.colors.fourthly,
     borderRadius: 20,
     padding: 16,
     ...Platform.select({
@@ -322,7 +372,7 @@ const styles = StyleSheet.create({
   cityText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#2C3E50",
+    color: theme.colors.secondary,
     textTransform: "uppercase",
   },
   tempRow: {
@@ -334,12 +384,12 @@ const styles = StyleSheet.create({
   tempText: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#2C3E50",
+    color: theme.colors.secondary,
   },
   divider: {
     width: 1,
     height: "100%",
-    backgroundColor: "#F0F0F0",
+    backgroundColor: theme.colors.tertiary,
     marginHorizontal: 12,
   },
   rightSection: {
@@ -349,7 +399,7 @@ const styles = StyleSheet.create({
   adviceLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#5D8A6F",
+    color: theme.colors.primary,
     marginBottom: 4,
   },
   adviceRow: {
@@ -359,7 +409,7 @@ const styles = StyleSheet.create({
   },
   adviceText: {
     fontSize: 14,
-    color: "#2C3E50",
+    color: theme.colors.secondary,
     flex: 1,
   },
-});
+})

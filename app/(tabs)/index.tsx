@@ -3,6 +3,7 @@ import PlantSection from '@/components/ui/HomeScreen/PlantSection';
 import CropsDoctorSection from '@/components/ui/HomeScreen/ScanDisease';
 import ToolsSection from '@/components/ui/HomeScreen/ToolsItem';
 import WeatherSection from '@/components/ui/HomeScreen/WeatherSection';
+import { ReviewButton } from '@/components/ui/Useable/ReviewButton';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 export default function FlorixApp() {
@@ -27,6 +28,7 @@ export default function FlorixApp() {
         {/* Video Tutorials with bottom padding */}
         {/* <VideoTutorialSection/> */}
       </ScrollView>
+        <ReviewButton />
     </View>
   );
 }

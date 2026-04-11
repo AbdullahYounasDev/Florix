@@ -148,6 +148,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingTop:26,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.tertiary,
     backgroundColor: '#FFFFFF',

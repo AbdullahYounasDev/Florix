@@ -28,18 +28,18 @@ type SettingItem = {
 
 export default function SettingsModal({ visible, onClose }: SettingsModalProps) {
   const settingsItems: SettingItem[] = [
-    {
-      id: 'language',
-      title: 'Language',
-      icon: 'language',
-      iconType: 'material',
-      onPress: () => {
-        onClose();
-        // Navigate to language selection
-        // router.push('/settings/language');
-      },
-      showChevron: true
-    },
+    // {
+    //   id: 'language',
+    //   title: 'Language',
+    //   icon: 'language',
+    //   iconType: 'material',
+    //   onPress: () => {
+    //     onClose();
+    //     // Navigate to language selection
+    //     // router.push('/settings/language');
+    //   },
+    //   showChevron: true
+    // },
     {
       id: 'privacy',
       title: 'Privacy Policy',
@@ -72,7 +72,7 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
         // Navigate to permissions explanation
         // router.push('/settings/permissions');
       },
-      showChevron: true
+      // showChevron: true
     },
     {
       id: 'support',
@@ -84,7 +84,7 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
         // Navigate to contact page
         // router.push('/settings/contact');
       },
-      showChevron: true
+      // showChevron: true
     },
     {
       id: 'about',
@@ -96,7 +96,7 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
         // Navigate to about page
         // router.push('/settings/about');
       },
-      showChevron: true
+      // showChevron: true
     },
   ];
 

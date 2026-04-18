@@ -101,8 +101,8 @@ const PlantHealthModal: React.FC<PlantHealthModalProps> = ({
               <Ionicons name="close" size={24} color="#2C3E50" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Florix Bot Analysis</Text>
-            <TouchableOpacity style={styles.actionButton} onPress={startImageAnalysis}>
-              <Ionicons name="refresh" size={20} color="#2C3E50" />
+            <TouchableOpacity style={styles.actionButton}>
+              {/* <Ionicons name="refresh" size={20} color="#2C3E50"  onPress={startImageAnalysis}/> */}
             </TouchableOpacity>
           </View>
 
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 15,
     alignItems: "center",
-    marginTop: 25,
+    marginVertical: 25,
   },
   doneButtonText: {
     color: "#FFF",

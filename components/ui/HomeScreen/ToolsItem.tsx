@@ -1,3 +1,4 @@
+import CropTimeline from '@/components/ui/FlorixTools/CropTimeline/CropTimeline';
 import CultivationTips from '@/components/ui/FlorixTools/CultivationTips/CultivationTips';
 import FertilizerCalculator from '@/components/ui/FlorixTools/FertilizerCalc/FertilizerCalculator';
 import PestsAndDisease from '@/components/ui/FlorixTools/PestsandDisease/PestsandDisease';
@@ -6,10 +7,12 @@ import { Feather, Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/
 import React, { useState } from 'react';
 import {
   Modal,
-  ScrollView, StatusBar, StyleSheet,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,30 +20,25 @@ const toolsData = [
   {
     id: 'fertilizer',
     title: 'Fertilizer Calculator',
-    icon: <MaterialCommunityIcons name="calculator" size={24} color={theme.colors.secondary} />,
+    icon: <MaterialCommunityIcons name="calculator" size={22} color={theme.colors.secondary} />,
   },
   {
     id: 'pests',
     title: 'Pests & Disease',
-    icon: <MaterialIcons name="bug-report" size={24} color={theme.colors.secondary} />,
+    icon: <MaterialIcons name="bug-report" size={22} color={theme.colors.secondary} />,
   },
   {
     id: 'tips',
     title: 'Cultivation Tips',
-    icon: <Ionicons name="bulb-outline" size={24} color={theme.colors.secondary} />,
+    icon: <Ionicons name="bulb-outline" size={22} color={theme.colors.secondary} />,
   },
-  // {
-  //   id: 'alert',
-  //   title: 'Disease Alert',
-  //   icon: <Ionicons name="notifications-outline" size={24} color={theme.colors.secondary} />,
-  // },
 ];
 
 export default function ToolsSection() {
   const [fertilizerModalVisible, setFertilizerModalVisible] = useState(false);
   const [pestsModalVisible, setPestsModalVisible] = useState(false);
   const [tipsModalVisible, setTipsModalVisible] = useState(false);
-  const [alertModalVisible, setAlertModalVisible] = useState(false);
+  const [timelineModalVisible, setTimelineModalVisible] = useState(false);
 
   const handlePress = (id: string) => {
     if (id === 'fertilizer') {
@@ -49,8 +47,8 @@ export default function ToolsSection() {
       setPestsModalVisible(true);
     } else if (id === 'tips') {
       setTipsModalVisible(true);
-    } else if (id === 'alert') {
-      setAlertModalVisible(true);
+    } else if (id === 'timeline') {
+      setTimelineModalVisible(true);
     }
   };
 
@@ -58,6 +56,32 @@ export default function ToolsSection() {
     <>
       <ScrollView contentContainerStyle={styles.section}>
         <Text style={styles.sectionTitle}>Tools</Text>
+
+        {/* Featured Crop Timeline */}
+        <TouchableOpacity
+          style={styles.featuredCard}
+          activeOpacity={0.9}
+          onPress={() => handlePress('timeline')}
+        >
+          <View style={styles.featuredBadge}>
+            <Ionicons name="star" size={12} color={theme.colors.fourthly} />
+            <Text style={styles.featuredBadgeText}>Featured</Text>
+          </View>
+          <View style={styles.featuredContent}>
+            <View style={styles.featuredLeft}>
+              <View style={styles.featuredIconContainer}>
+                <MaterialCommunityIcons name="timeline-clock-outline" size={28} color={theme.colors.fourthly} />
+              </View>
+              <View style={styles.featuredTextBlock}>
+                <Text style={styles.featuredTitle}>Crop Timeline</Text>
+                <Text style={styles.featuredSubtitle}>Complete growing guide from seed to harvest</Text>
+              </View>
+            </View>
+            <Feather name="arrow-right" size={20} color={theme.colors.fourthly} />
+          </View>
+        </TouchableOpacity>
+
+        {/* Regular Tools Grid */}
         <View style={styles.grid}>
           {toolsData.map((tool) => (
             <TouchableOpacity
@@ -68,7 +92,7 @@ export default function ToolsSection() {
             >
               <View style={styles.toolHeader}>
                 <View style={styles.iconContainer}>{tool.icon}</View>
-                <Feather name="arrow-right" size={18} color={theme.colors.secondary} />
+                <Feather name="arrow-right" size={16} color={theme.colors.secondary} />
               </View>
               <Text style={styles.toolTitle}>{tool.title}</Text>
             </TouchableOpacity>
@@ -118,19 +142,19 @@ export default function ToolsSection() {
         </SafeAreaView>
       </Modal>
 
-      {/* Disease Alert Modal */}
-      {/* <Modal
-        visible={alertModalVisible}
+      {/* Crop Timeline Modal */}
+      <Modal
+        visible={timelineModalVisible}
         animationType="slide"
         transparent={false}
-        onRequestClose={() => setAlertModalVisible(false)}
+        onRequestClose={() => setTimelineModalVisible(false)}
         statusBarTranslucent
       >
         <StatusBar barStyle="dark-content" />
         <SafeAreaView style={{ flex: 1 }}>
-          <DiseaseAlert onClose={() => setAlertModalVisible(false)} />
+          <CropTimeline onClose={() => setTimelineModalVisible(false)} />
         </SafeAreaView>
-      </Modal> */}
+      </Modal>
     </>
   );
 }
@@ -139,6 +163,8 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 20,
     paddingVertical: 20,
+    paddingBottom: 10
+    
   },
   sectionTitle: {
     fontSize: 20,
@@ -146,6 +172,67 @@ const styles = StyleSheet.create({
     color: theme.colors.secondary,
     marginBottom: 15,
   },
+
+  // Featured Card
+  featuredCard: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 18,
+  },
+  featuredBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginBottom: 14,
+  },
+  featuredBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.colors.fourthly,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  featuredContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  featuredLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    flex: 1,
+  },
+  featuredIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featuredTextBlock: {
+    flex: 1,
+  },
+  featuredTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: theme.colors.fourthly,
+    marginBottom: 3,
+  },
+  featuredSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: theme.colors.fourthly,
+  },
+
+  // Regular Grid
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -153,15 +240,12 @@ const styles = StyleSheet.create({
   },
   toolCard: {
     width: '48%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.fourthly,
     borderRadius: 16,
     padding: 15,
     marginBottom: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    borderWidth: 1,
+    borderColor: theme.colors.tertiary,
   },
   toolHeader: {
     flexDirection: 'row',
@@ -170,10 +254,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E8F5E8',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: theme.colors.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -27,7 +27,6 @@ export default function WeatherSection() {
   const [fullWeatherData, setFullWeatherData] = useState<any>(null);
   const [loadingStage, setLoadingStage] = useState<'connecting' | 'locating' | 'fetching'>('connecting');
 
-  // ─── Check Internet ───────────────────────────────────────────
   const checkInternet = async (): Promise<boolean> => {
     try {
       const res = await fetch("https://www.google.com", { method: "HEAD" });
@@ -37,31 +36,23 @@ export default function WeatherSection() {
     }
   };
 
-  // ─── Get Coords (from storage or device) ─────────────────────
   const getCoords = async (): Promise<{ latitude: number; longitude: number } | null> => {
-    // 1. Try stored coords first
     const stored = await getAddress();
     if (stored?.latitude && stored?.longitude) {
       return { latitude: stored.latitude, longitude: stored.longitude };
     }
 
     setLoadingStage('locating');
-    
-    // 2. Request location permission
+
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       setErrorType("no_permission");
       return null;
     }
 
-    // 3. Get device location
     try {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const coords = {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-      };
-      // Save for next time
+      const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
       await updateAddress({ ...coords });
       return coords;
     } catch {
@@ -70,27 +61,23 @@ export default function WeatherSection() {
     }
   };
 
-  // ─── Fetch Weather ────────────────────────────────────────────
   const fetchWeather = async () => {
     try {
       setLoading(true);
       setErrorType(null);
       setLoadingStage('connecting');
 
-      // 1. Internet check
       const hasInternet = await checkInternet();
       if (!hasInternet) {
         setErrorType("no_internet");
         return;
       }
 
-      // 2. Get coordinates
       const coords = await getCoords();
-      if (!coords) return; // error already set inside getCoords
+      if (!coords) return;
 
       setLoadingStage('fetching');
 
-      // 3. Fetch weather API
       const response = await fetch("https://florix-backend.vercel.app/api/v1/weather/getweather", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,17 +93,22 @@ export default function WeatherSection() {
       const apiData = data.data;
 
       setWeatherData({
-        city:      apiData.city,
-        country:   apiData.country,
-        temp:      apiData.today.temp,
+        city: apiData.city,
+        country: apiData.country,
+        temp: apiData.today.temp,
         condition: apiData.today.condition,
-        isDay:     apiData.today.isDay,
+        isDay: apiData.today.isDay,
         timeOfDay: apiData.today.timeOfDay,
+        humidity: apiData.today.humidity,
+        windSpeed: apiData.today.windSpeed,
+        feels: apiData.today.feels,
+        desc: apiData.today.desc,
+        clouds: apiData.today.clouds,
+        rainChance: apiData.today.rainChance,
       });
 
       setRecommendations(getWeatherAdvice(apiData.today));
       setFullWeatherData(apiData);
-
       await updateAddress({ city: apiData.city, country: apiData.country, ...coords });
     } catch {
       setErrorType("unknown");
@@ -127,133 +119,98 @@ export default function WeatherSection() {
 
   useEffect(() => { fetchWeather(); }, [retryCount]);
 
-  // ─── Loading State ─────────────────────────────────────────────
   if (loading) {
-    const loadingMessages = {
-      connecting: {
-        title: "Connecting...",
-        subtitle: "Establishing connection to weather service",
-      },
-      locating: {
-        title: "Locating...",
-        subtitle: "Finding your current location",
-      },
-      fetching: {
-        title: "Fetching...",
-        subtitle: "Getting latest weather data",
-      },
-    };
-
-    const currentStage = loadingMessages[loadingStage];
-
     return (
       <View style={styles.loadingCard}>
         <ActivityIndicator size="small" color={theme.colors.primary} />
-        <View style={styles.loadingContent}>
-          <Text style={styles.loadingTitle}>{currentStage.title}</Text>
-          <Text style={styles.loadingSubtitle}>{currentStage.subtitle}</Text>
-        </View>
       </View>
     );
   }
 
-  // ─── Error States ─────────────────────────────────────────────
   if (errorType || !weatherData) {
     const errorConfig = {
-      no_internet: {
-        title: "No connection",
-        subtitle: "Check internet to fetch forecast",
-        color: "#E74C3C",
-      },
-      no_permission: {
-        title: "Location off",
-        subtitle: "Enable location for local weather",
-        color: "#E74C3C",
-      },
-      location_failed: {
-        title: "Can't find you",
-        subtitle: "Unable to get current location",
-        color: "#E74C3C",
-      },
-      api_failed: {
-        title: "Forecast unavailable",
-        subtitle: "Weather service is down",
-        color: "#E74C3C",
-      },
-      unknown: {
-        title: "Weather error",
-        subtitle: "Couldn't load forecast",
-        color: "#E74C3C",
-      },
+      no_internet: { icon: "cloud-offline-outline", title: "No Connection", subtitle: "Check your internet to fetch forecast" },
+      no_permission: { icon: "location-outline", title: "Location Off", subtitle: "Enable location for local weather" },
+      location_failed: { icon: "navigate-outline", title: "Can't Find You", subtitle: "Unable to get current location" },
+      api_failed: { icon: "server-outline", title: "Service Down", subtitle: "Weather service is temporarily unavailable" },
+      unknown: { icon: "warning-outline", title: "Something Went Wrong", subtitle: "Couldn't load weather data" },
     };
 
     const cfg = errorConfig[errorType ?? "unknown"];
 
     return (
-      <TouchableOpacity
-        style={styles.errorCard}
-        onPress={() => setRetryCount(c => c + 1)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.errorContent}>
-          <View style={styles.errorHeader}>
-            <Ionicons 
-              name="cloud-offline-outline"
-              size={20} 
-              color={cfg.color} 
-            />
-            <Text style={[styles.errorTitle, { color: theme.colors.secondary }]}>
-              {cfg.title}
-            </Text>
-          </View>
-          <Text style={styles.errorSubtitle}>{cfg.subtitle}</Text>
-          <View style={styles.retryButton}>
-            <Text style={[styles.retryButtonText, { color: theme.colors.primary }]}>
-              Refresh
-            </Text>
-          </View>
+      <TouchableOpacity style={styles.errorCard} onPress={() => setRetryCount(c => c + 1)} activeOpacity={0.8}>
+        <Ionicons name={cfg.icon as any} size={48} color={theme.colors.primary} />
+        <Text style={styles.errorTitle}>{cfg.title}</Text>
+        <Text style={styles.errorSubtitle}>{cfg.subtitle}</Text>
+        <View style={styles.retryBadge}>
+          <Ionicons name="refresh" size={14} color={theme.colors.fourthly} />
+          <Text style={styles.retryText}>Tap to Retry</Text>
         </View>
       </TouchableOpacity>
     );
-  };
+  }
 
-  // ─── Success ──────────────────────────────────────────────────
   const icon = getWeatherIcon(weatherData.condition, weatherData.isDay ? "01d" : "01n");
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.mainContainer}
-        onPress={() => setModalVisible(true)}
-        activeOpacity={0.8}
-      >
-        {/* Left Side */}
-        <View style={styles.leftSection}>
-          <Text style={styles.cityText}>{weatherData.city}</Text>
-          <View style={styles.tempRow}>
-            <Ionicons name={icon.name as any} size={24} color={icon.color} />
-            <Text style={styles.tempText}>{weatherData.temp}°C</Text>
+    <View style={styles.wrapper}>
+      <TouchableOpacity style={styles.card} onPress={() => setModalVisible(true)} activeOpacity={0.95}>
+        {/* Top Row: Location & Time */}
+        <View style={styles.topRow}>
+          <View style={styles.locationBadge}>
+            <Ionicons name="location" size={14} color={theme.colors.primary} />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {weatherData.city}, {weatherData.country}
+            </Text>
+          </View>
+          <View style={styles.timeBadge}>
+            <Ionicons
+              name={weatherData.isDay ? "sunny-outline" : "moon-outline"}
+              size={14}
+              color={theme.colors.secondary}
+            />
+            <Text style={styles.timeText}>{weatherData.timeOfDay}</Text>
           </View>
         </View>
 
-        <View style={styles.divider} />
-
-        {/* Right Side */}
-        <View style={styles.rightSection}>
-          <Text style={styles.adviceLabel}>Farmer's Guide</Text>
-          {recommendations.slice(0, 1).map((item) => (
-            <View key={item.id} style={styles.adviceRow}>
-              <Ionicons
-                name={item.type === "good" ? "checkmark-circle" : "alert-circle"}
-                size={16}
-                color={item.type === "good" ? "#5D8A6F" : "#D84315"}
-              />
-              <Text numberOfLines={1} style={styles.adviceText}>{item.text}</Text>
-            </View>
-          ))}
+        {/* Main Weather Display */}
+        <View style={styles.mainWeather}>
+          <View style={styles.tempSection}>
+            <Text style={styles.temperature}>{weatherData.temp}°</Text>
+            <Text style={styles.conditionText}>{weatherData.desc}</Text>
+          </View>
+          <View style={styles.iconSection}>
+            <Ionicons name={icon.name as any} size={64} color={icon.color} />
+          </View>
         </View>
 
-        <Ionicons name="chevron-forward" size={18} color="#2C3E50" />
+        {/* Quick Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Ionicons name="water-outline" size={15} color={theme.colors.secondary} />
+            <Text style={styles.statValue}>{weatherData.humidity}%</Text>
+            <Text style={styles.statLabel}>Humidity</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Ionicons name="speedometer-outline" size={15} color={theme.colors.secondary} />
+            <Text style={styles.statValue}>{weatherData.windSpeed} m/s</Text>
+            <Text style={styles.statLabel}>Wind</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Ionicons name="rainy-outline" size={15} color={theme.colors.secondary} />
+            <Text style={styles.statValue}>{weatherData.rainChance}%</Text>
+            <Text style={styles.statLabel}>Rain</Text>
+          </View>
+        </View>
+
+        {/* Tap Indicator */}
+        <View style={styles.tapIndicator}>
+          <Text style={styles.tapText}>Tap for details</Text>
+          <Ionicons name="chevron-forward" size={14} color={theme.colors.secondary} />
+        </View>
       </TouchableOpacity>
 
       <WeatherDetailsModal
@@ -267,149 +224,206 @@ export default function WeatherSection() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 16,
-    marginTop: 0,
-    marginBottom: 2,
+  wrapper: {
+    width: '100%',
   },
-  
-  // Loading Styles
-  loadingCard: {
+  card: {
+    backgroundColor: theme.colors.fourthly,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    padding: 18,
+    marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 24,
+      },
+      android: { elevation: 1 },
+    }),
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  locationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
     backgroundColor: theme.colors.fourthly,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
-    marginVertical: 10,
-    marginHorizontal: 14,
-    padding: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.tertiary,
+    flex: 1,
+    marginRight: 12,
+  },
+  locationText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.secondary,
+    flex: 1,
+  },
+  timeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: theme.colors.fourthly,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.tertiary,
+  },
+  timeText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: theme.colors.secondary,
+    opacity: 0.8,
+  },
+  mainWeather: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  tempSection: {
+    flex: 1,
+  },
+  temperature: {
+    fontSize: 56,
+    fontWeight: '300',
+    color: theme.colors.secondary,
+    letterSpacing: -2,
+    lineHeight: 64,
+  },
+  conditionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.colors.secondary,
+    opacity: 0.7,
+    marginTop: 4,
+  },
+  iconSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    backgroundColor: theme.colors.tertiary,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 3,
+  },
+  statValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.secondary,
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: theme.colors.secondary,
+    opacity: 0.6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: theme.colors.fourthly,
+    opacity: 0.5,
+  },
+  tapIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    opacity: 0.5,
+  },
+  tapText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: theme.colors.secondary,
+  },
+  loadingCard: {
+    backgroundColor: theme.colors.fourthly,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    marginBottom: 20,
+    padding: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 24,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  errorCard: {
+    backgroundColor: theme.colors.fourthly,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    padding: 32,
+    marginBottom: 20,
+    alignItems: 'center',
     gap: 12,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 24,
       },
-      android: { elevation: 2 },
+      android: { elevation: 4 },
     }),
-  },
-  loadingContent: {
-    flex: 1,
-  },
-  loadingTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: theme.colors.secondary,
-    marginBottom: 2,
-  },
-  loadingSubtitle: {
-    fontSize: 12,
-    color: theme.colors.secondary,
-    opacity: 0.7,
-  },
-  
-  // Error Styles
-  errorCard: {
-    backgroundColor: theme.colors.fourthly,
-    borderRadius: 20,
-    marginVertical: 10,
-    marginHorizontal: 14,
-    padding: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 6,
-      },
-      android: { elevation: 2 },
-    }),
-  },
-  errorContent: {
-    gap: 8,
-  },
-  errorHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   errorTitle: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.secondary,
+    marginTop: 4,
   },
   errorSubtitle: {
-    fontSize: 13,
-    color: theme.colors.secondary,
-    opacity: 0.7,
-    lineHeight: 18,
-    paddingLeft: 28,
-  },
-  retryButton: {
-    paddingLeft: 28,
-    paddingTop: 4,
-  },
-  retryButtonText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-
-  // Success Styles
-  mainContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: theme.colors.fourthly,
-    borderRadius: 20,
-    padding: 16,
-    ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
-      android: { elevation: 1 },
-    }),
-    marginBottom: 14,
-  },
-  leftSection: {
-    flex: 1,
-  },
-  cityText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: theme.colors.secondary,
-    textTransform: "uppercase",
-  },
-  tempRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
-    gap: 8,
-  },
-  tempText: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: theme.colors.secondary,
-  },
-  divider: {
-    width: 1,
-    height: "100%",
-    backgroundColor: theme.colors.tertiary,
-    marginHorizontal: 12,
-  },
-  rightSection: {
-    flex: 2,
-    justifyContent: "center",
-  },
-  adviceLabel: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: theme.colors.primary,
-    marginBottom: 4,
-  },
-  adviceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  adviceText: {
     fontSize: 14,
+    fontWeight: '400',
     color: theme.colors.secondary,
-    flex: 1,
+    opacity: 0.6,
+    textAlign: 'center',
+    lineHeight: 20,
   },
-})
+  retryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  retryText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.fourthly,
+  },
+});

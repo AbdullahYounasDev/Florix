@@ -68,15 +68,15 @@ export default function TabLayout() {
           ),
         }}
       />
-      
+
       <Tabs.Screen
-        name="profile"
+        name="crop-timeline"
         options={{
-          title: 'Profile',
+          title: 'Crop Timeline',
           tabBarIcon: ({ color, focused }) => (
             <View style={focused ? styles.selectedTab : undefined}>
-              <Ionicons 
-                name={focused ? "person" : "person-outline"} 
+              <MaterialCommunityIcons 
+                name={focused ? "timeline-clock" : "timeline-clock-outline"}  
                 size={focused ? 24 : 22} 
                 color={focused ? '#FFFFFF' : color} 
               />
@@ -102,5 +102,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
-  } as const, // Add 'as const' to fix TypeScript inference
+  },
 });

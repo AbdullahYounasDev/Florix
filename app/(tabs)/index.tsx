@@ -1,5 +1,4 @@
 import Header from '@/components/ui/header';
-import PlantSection from '@/components/ui/HomeScreen/PlantSection';
 import CropsDoctorSection from '@/components/ui/HomeScreen/ScanDisease';
 import ToolsSection from '@/components/ui/HomeScreen/ToolsItem';
 import WeatherSection from '@/components/ui/HomeScreen/WeatherSection';
@@ -14,7 +13,7 @@ export default function FlorixApp() {
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.mainScroll}>
         {/* Plant Selection Section */}
-        <PlantSection/>
+        {/* <PlantSection/> */}
 
         {/* Weather & Recommendations Row with bottom padding */}
         <WeatherSection/>

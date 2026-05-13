@@ -4,21 +4,21 @@
     "slug": "Florix",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "florix",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/welcomethird.png",
+      "image": "./assets/images/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FAFAFA"
+      "backgroundColor": "#FDFDFD"
     },
     "ios": {
       "supportsTablet": true,
       "splash": {
-        "image": "./assets/images/welcomethird.png",
+        "image": "./assets/images/logo.png",
         "resizeMode": "contain",
-        "backgroundColor": "#FAFAFA"
+        "backgroundColor": "#FDFDFD"
       }
     },
     "android": {

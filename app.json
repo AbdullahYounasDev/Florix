@@ -30,7 +30,13 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.abdullahyounasdev.Florix"
+      "package": "com.abdullahyounasdev.Florix",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -67,6 +73,12 @@
       "eas": {
         "projectId": "6d46517d-770a-490b-8054-1fdccab38ba1"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6d46517d-770a-490b-8054-1fdccab38ba1"
     }
   }
 }

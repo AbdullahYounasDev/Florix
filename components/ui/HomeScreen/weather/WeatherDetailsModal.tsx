@@ -409,6 +409,7 @@ const styles = StyleSheet.create({
 
   // ── RECOMMENDATIONS ──
   recommendationsContainer: {
+    paddingBottom:30,
     paddingHorizontal: 20,
   },
   sectionHeader: {

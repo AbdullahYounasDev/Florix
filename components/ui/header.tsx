@@ -25,13 +25,13 @@ export default function AppHeader({
     return <Ionicons name="leaf" size={22} color={theme.colors.primary} />;
   } else if(page === 'florix-bot') {
     return <MaterialCommunityIcons name="robot-angry" size={22} color={theme.colors.primary}  />;
-  } else if(page === 'profile') {
-    return <Ionicons name="person" size={22} color={theme.colors.primary}  />;
-  }
+  } else if(page === 'crop-timeline') {
+    return <MaterialCommunityIcons name="timeline-clock-outline" size={22} color={theme.colors.primary}  />;
+  } 
 };
   return (
     <>
-      <View style={styles.header}>
+      <View style={page === 'crop-timeline' ? styles.headerOne : styles.header}>
         {/* Left Side - Back Button or Empty */}
         <View style={styles.leftSection}>
           {showBackButton ? (
@@ -72,6 +72,17 @@ export default function AppHeader({
 }
 
 const styles = StyleSheet.create({
+  headerOne: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 15,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8F5E8',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

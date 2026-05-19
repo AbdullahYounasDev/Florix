@@ -1,6 +1,7 @@
 // app/crop-timeline.tsx
 import CropTimeline from '@/components/ui/FlorixTools/CropTimeline/CropTimeline';
-import { StyleSheet, View } from 'react-native';
+import AppHeader from '@/components/ui/header';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CropTimelineScreen() {
@@ -8,7 +9,11 @@ export default function CropTimelineScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <CropTimeline />
+      <AppHeader title='Crops Timeline' page='crop-timeline' showSettings={true} />
+
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.mainScroll}>
+      <CropTimeline HeaderState={false}/>
+      </ScrollView>
     </View>
   );
 }
@@ -17,5 +22,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  mainScroll: {
+    flex: 1,
   },
 });

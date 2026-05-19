@@ -1,5 +1,7 @@
+// components/WeatherSection.tsx
+import { useLocation } from '@/contexts/LocationContext';
 import { theme } from "@/utils/theme";
-import { getAddress, updateAddress } from "@/utils/userdata";
+import { updateAddress } from "@/utils/userdata";
 import { getWeatherAdvice } from "@/utils/weatherAdvice";
 import { getWeatherIcon } from "@/utils/weatherIcon";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,14 +20,13 @@ import WeatherDetailsModal from "./weather/WeatherDetailsModal";
 type ErrorType = "no_internet" | "no_permission" | "location_failed" | "api_failed" | "unknown";
 
 export default function WeatherSection() {
+  const { locationData, locationVersion, refreshLocation } = useLocation();
   const [weatherData, setWeatherData] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorType, setErrorType] = useState<ErrorType | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [fullWeatherData, setFullWeatherData] = useState<any>(null);
-  const [loadingStage, setLoadingStage] = useState<'connecting' | 'locating' | 'fetching'>('connecting');
 
   const checkInternet = async (): Promise<boolean> => {
     try {
@@ -37,13 +38,12 @@ export default function WeatherSection() {
   };
 
   const getCoords = async (): Promise<{ latitude: number; longitude: number } | null> => {
-    const stored = await getAddress();
-    if (stored?.latitude && stored?.longitude) {
-      return { latitude: stored.latitude, longitude: stored.longitude };
+    // First check if we have stored location
+    if (locationData?.latitude && locationData?.longitude) {
+      return { latitude: locationData.latitude, longitude: locationData.longitude };
     }
 
-    setLoadingStage('locating');
-
+    // No stored location, request GPS
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       setErrorType("no_permission");
@@ -53,7 +53,6 @@ export default function WeatherSection() {
     try {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-      await updateAddress({ ...coords });
       return coords;
     } catch {
       setErrorType("location_failed");
@@ -65,7 +64,6 @@ export default function WeatherSection() {
     try {
       setLoading(true);
       setErrorType(null);
-      setLoadingStage('connecting');
 
       const hasInternet = await checkInternet();
       if (!hasInternet) {
@@ -75,8 +73,6 @@ export default function WeatherSection() {
 
       const coords = await getCoords();
       if (!coords) return;
-
-      setLoadingStage('fetching');
 
       const response = await fetch("https://florix-backend.vercel.app/api/v1/weather/getweather", {
         method: "POST",
@@ -110,6 +106,7 @@ export default function WeatherSection() {
       setRecommendations(getWeatherAdvice(apiData.today));
       setFullWeatherData(apiData);
       await updateAddress({ city: apiData.city, country: apiData.country, ...coords });
+      refreshLocation(); // Update context with new location
     } catch {
       setErrorType("unknown");
     } finally {
@@ -117,12 +114,15 @@ export default function WeatherSection() {
     }
   };
 
-  useEffect(() => { fetchWeather(); }, [retryCount]);
+  useEffect(() => {
+    fetchWeather();
+  }, [locationVersion]);
 
   if (loading) {
     return (
       <View style={styles.loadingCard}>
         <ActivityIndicator size="small" color={theme.colors.primary} />
+        <Text style={styles.loadingText}>Fetching Weather...</Text>
       </View>
     );
   }
@@ -130,8 +130,7 @@ export default function WeatherSection() {
   if (errorType || !weatherData) {
     const errorConfig = {
       no_internet: { icon: "cloud-offline-outline", title: "No Connection", subtitle: "Check your internet to fetch forecast" },
-      no_permission: { icon: "location-outline", title: "Location Off", subtitle: "Enable location for local weather" },
-      location_failed: { icon: "navigate-outline", title: "Can't Find You", subtitle: "Unable to get current location" },
+      location_failed: { icon: "location-outline", title: "Location Required", subtitle: "Please set your location in settings" },
       api_failed: { icon: "server-outline", title: "Service Down", subtitle: "Weather service is temporarily unavailable" },
       unknown: { icon: "warning-outline", title: "Something Went Wrong", subtitle: "Couldn't load weather data" },
     };
@@ -139,7 +138,7 @@ export default function WeatherSection() {
     const cfg = errorConfig[errorType ?? "unknown"];
 
     return (
-      <TouchableOpacity style={styles.errorCard} onPress={() => setRetryCount(c => c + 1)} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.errorCard} onPress={fetchWeather} activeOpacity={0.8}>
         <Ionicons name={cfg.icon as any} size={48} color={theme.colors.primary} />
         <Text style={styles.errorTitle}>{cfg.title}</Text>
         <Text style={styles.errorSubtitle}>{cfg.subtitle}</Text>
@@ -156,7 +155,6 @@ export default function WeatherSection() {
   return (
     <View style={styles.wrapper}>
       <TouchableOpacity style={styles.card} onPress={() => setModalVisible(true)} activeOpacity={0.95}>
-        {/* Top Row: Location & Time */}
         <View style={styles.topRow}>
           <View style={styles.locationBadge}>
             <Ionicons name="location" size={14} color={theme.colors.primary} />
@@ -174,7 +172,6 @@ export default function WeatherSection() {
           </View>
         </View>
 
-        {/* Main Weather Display */}
         <View style={styles.mainWeather}>
           <View style={styles.tempSection}>
             <Text style={styles.temperature}>{weatherData.temp}°</Text>
@@ -185,7 +182,6 @@ export default function WeatherSection() {
           </View>
         </View>
 
-        {/* Quick Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Ionicons name="water-outline" size={15} color={theme.colors.secondary} />
@@ -206,7 +202,6 @@ export default function WeatherSection() {
           </View>
         </View>
 
-        {/* Tap Indicator */}
         <View style={styles.tapIndicator}>
           <Text style={styles.tapText}>Tap for details</Text>
           <Ionicons name="chevron-forward" size={14} color={theme.colors.secondary} />
@@ -367,15 +362,22 @@ const styles = StyleSheet.create({
     padding: 48,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 12,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 24,
       },
-      android: { elevation: 4 },
+      android: { elevation: 1 },
     }),
+  },
+  loadingText: {
+    fontSize: 14,
+    color: theme.colors.secondary,
+    opacity: 0.6,
+    fontWeight: '500',
   },
   errorCard: {
     backgroundColor: theme.colors.fourthly,
@@ -390,11 +392,11 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 24,
       },
-      android: { elevation: 4 },
+      android: { elevation: 1 },
     }),
   },
   errorTitle: {

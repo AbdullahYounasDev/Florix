@@ -1,9 +1,9 @@
+// components/Reusable/SettingsModal.tsx
+import LocationChangeModal from '@/components/ui/Settings/LocationChangeModal';
 import { theme } from '@/utils/theme';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Alert,
-  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -15,6 +15,7 @@ import {
 type SettingsModalProps = {
   visible: boolean;
   onClose: () => void;
+  onLocationUpdated?: () => void;
 };
 
 type SettingItem = {
@@ -26,41 +27,26 @@ type SettingItem = {
   showChevron?: boolean;
 };
 
-export default function SettingsModal({ visible, onClose }: SettingsModalProps) {
+export default function SettingsModal({ 
+  visible, 
+  onClose,
+  onLocationUpdated 
+}: SettingsModalProps) {
+  const [showLocationModal, setShowLocationModal] = useState(false);
+
   const settingsItems: SettingItem[] = [
-    // {
-    //   id: 'language',
-    //   title: 'Language',
-    //   icon: 'language',
-    //   iconType: 'material',
-    //   onPress: () => {
-    //     onClose();
-    //     // Navigate to language selection
-    //     // router.push('/settings/language');
-    //   },
-    //   showChevron: true
-    // },
     {
-      id: 'privacy',
-      title: 'Privacy Policy',
-      icon: 'shield-checkmark',
+      id: 'location',
+      title: 'Location',
+      icon: 'location',
       iconType: 'ionicons',
       onPress: () => {
-        Linking.openURL('https://yourwebsite.com/privacy').catch(() => {
-          Alert.alert('Error', 'Could not open privacy policy');
-        });
-      }
-    },
-    {
-      id: 'terms',
-      title: 'Terms & Conditions',
-      icon: 'document-text',
-      iconType: 'ionicons',
-      onPress: () => {
-        Linking.openURL('https://yourwebsite.com/terms').catch(() => {
-          Alert.alert('Error', 'Could not open terms & conditions');
-        });
-      }
+        onClose();
+        setTimeout(() => {
+          setShowLocationModal(true);
+        }, 300);
+      },
+      showChevron: true
     },
     {
       id: 'permissions',
@@ -69,10 +55,7 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
       iconType: 'ionicons',
       onPress: () => {
         onClose();
-        // Navigate to permissions explanation
-        // router.push('/settings/permissions');
       },
-      // showChevron: true
     },
     {
       id: 'support',
@@ -81,10 +64,7 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
       iconType: 'material',
       onPress: () => {
         onClose();
-        // Navigate to contact page
-        // router.push('/settings/contact');
       },
-      // showChevron: true
     },
     {
       id: 'about',
@@ -93,10 +73,7 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
       iconType: 'ionicons',
       onPress: () => {
         onClose();
-        // Navigate to about page
-        // router.push('/settings/about');
       },
-      // showChevron: true
     },
   ];
 
@@ -104,8 +81,18 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
     onClose();
   };
 
+  const handleLocationClose = () => {
+    setShowLocationModal(false);
+  };
+
+  const handleLocationUpdated = () => {
+    if (onLocationUpdated) {
+      onLocationUpdated();
+    }
+  };
+
   const renderIcon = (item: SettingItem) => {
-    const iconColor = theme.colors.primary ;
+    const iconColor = theme.colors.primary;
     const iconSize = 22;
 
     if (item.iconType === 'ionicons') {
@@ -116,64 +103,72 @@ export default function SettingsModal({ visible, onClose }: SettingsModalProps) 
   };
 
   return (
-    <Modal
-      animationType="fade"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      {/* Backdrop */}
-      <TouchableOpacity 
-        style={styles.backdrop} 
-        activeOpacity={0.85}
-        onPress={handleBackdropPress}
+    <>
+      {/* Settings Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={visible}
+        onRequestClose={onClose}
       >
-        <View style={styles.modalContainer}>
-          {/* Modal Content */}
-          <TouchableOpacity 
-            activeOpacity={0.85}
-            style={styles.content}
-            onPress={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Settings</Text>
-              <TouchableOpacity onPress={onClose} activeOpacity={0.85} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color={theme.colors.secondary} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Settings List */}
-            <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
-              {settingsItems.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.item}
-                  onPress={item.onPress}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.itemLeft}>
-                    <View style={styles.iconContainer}>
-                      {renderIcon(item)}
-                    </View>
-                    <Text style={styles.itemTitle}>{item.title}</Text>
-                  </View>
-                  {item.showChevron && (
-                    <Ionicons name="chevron-forward" size={20} color={theme.colors.secondary} />
-                  )}
+        <TouchableOpacity 
+          style={styles.backdrop} 
+          activeOpacity={0.85}
+          onPress={handleBackdropPress}
+        >
+          <View style={styles.modalContainer}>
+            <TouchableOpacity 
+              activeOpacity={0.85}
+              style={styles.content}
+              onPress={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <View style={styles.header}>
+                <Text style={styles.title}>Settings</Text>
+                <TouchableOpacity onPress={onClose} activeOpacity={0.85} style={styles.closeButton}>
+                  <Ionicons name="close" size={24} color={theme.colors.secondary} />
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+              </View>
 
-            {/* Footer */}
-            <View style={styles.footer}>
-              <Text style={styles.version}>Florix v1.0.0</Text>
-              <Text style={styles.copyright}>© 2024 All rights reserved</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
-    </Modal>
+              {/* Settings List */}
+              <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+                {settingsItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.item}
+                    onPress={item.onPress}
+                    activeOpacity={0.85}
+                  >
+                    <View style={styles.itemLeft}>
+                      <View style={styles.iconContainer}>
+                        {renderIcon(item)}
+                      </View>
+                      <Text style={styles.itemTitle}>{item.title}</Text>
+                    </View>
+                    {item.showChevron && (
+                      <Ionicons name="chevron-forward" size={20} color={theme.colors.secondary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              {/* Footer */}
+              <View style={styles.footer}>
+                <Text style={styles.version}>Florix v1.0.0</Text>
+                <Text style={styles.copyright}>© 2024 All rights reserved</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Location Change Modal */}
+      <LocationChangeModal
+        visible={showLocationModal}
+        onClose={handleLocationClose}
+        onLocationUpdated={handleLocationUpdated}
+      />
+    </>
   );
 }
 
@@ -258,7 +253,7 @@ const styles = StyleSheet.create({
   },
   version: {
     fontSize: 12,
-    color: theme.colors.primary ,
+    color: theme.colors.primary,
     fontWeight: '600',
     marginBottom: 4,
   },

@@ -51,9 +51,10 @@ interface TimelineData {
 
 interface Props {
   onClose?: () => void;
+  HeaderState: Boolean
 }
 
-export default function CropTimeline({ onClose }: Props) {
+export default function CropTimeline({ onClose, HeaderState=true }: Props) {
   const [selectedCrop, setSelectedCrop] = useState<any>(null);
   const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -138,6 +139,7 @@ export default function CropTimeline({ onClose }: Props) {
   return (
     <View style={styles.container}>
       {/* Header */}
+      {HeaderState && (
       <View style={styles.header}>
         <Text style={styles.title}>Crop Timeline</Text>
         {onClose && (
@@ -146,6 +148,7 @@ export default function CropTimeline({ onClose }: Props) {
           </TouchableOpacity>
         )}
       </View>
+      )}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Crop Selector - Always visible at top */}

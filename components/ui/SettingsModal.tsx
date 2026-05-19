@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import InfoModal from './Settings/InfoModal';
 
 type SettingsModalProps = {
   visible: boolean;
@@ -27,12 +28,14 @@ type SettingItem = {
   showChevron?: boolean;
 };
 
-export default function SettingsModal({ 
-  visible, 
+export default function SettingsModal({
+  visible,
   onClose,
-  onLocationUpdated 
+  onLocationUpdated
 }: SettingsModalProps) {
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [infoModalVisible, setInfoModalVisible] = useState(false);
+  const [infoModalType, setInfoModalType] = useState<'permissions' | 'support' | 'about'>('about');
 
   const settingsItems: SettingItem[] = [
     {
@@ -42,9 +45,7 @@ export default function SettingsModal({
       iconType: 'ionicons',
       onPress: () => {
         onClose();
-        setTimeout(() => {
-          setShowLocationModal(true);
-        }, 300);
+        setTimeout(() => setShowLocationModal(true), 300);
       },
       showChevron: true
     },
@@ -55,7 +56,12 @@ export default function SettingsModal({
       iconType: 'ionicons',
       onPress: () => {
         onClose();
+        setTimeout(() => {
+          setInfoModalType('permissions');
+          setInfoModalVisible(true);
+        }, 300);
       },
+      showChevron: true
     },
     {
       id: 'support',
@@ -64,7 +70,12 @@ export default function SettingsModal({
       iconType: 'material',
       onPress: () => {
         onClose();
+        setTimeout(() => {
+          setInfoModalType('support');
+          setInfoModalVisible(true);
+        }, 300);
       },
+      showChevron: true
     },
     {
       id: 'about',
@@ -73,7 +84,12 @@ export default function SettingsModal({
       iconType: 'ionicons',
       onPress: () => {
         onClose();
+        setTimeout(() => {
+          setInfoModalType('about');
+          setInfoModalVisible(true);
+        }, 300);
       },
+      showChevron: true
     },
   ];
 
@@ -111,13 +127,13 @@ export default function SettingsModal({
         visible={visible}
         onRequestClose={onClose}
       >
-        <TouchableOpacity 
-          style={styles.backdrop} 
+        <TouchableOpacity
+          style={styles.backdrop}
           activeOpacity={0.85}
           onPress={handleBackdropPress}
         >
           <View style={styles.modalContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               activeOpacity={0.85}
               style={styles.content}
               onPress={(e) => e.stopPropagation()}
@@ -167,6 +183,11 @@ export default function SettingsModal({
         visible={showLocationModal}
         onClose={handleLocationClose}
         onLocationUpdated={handleLocationUpdated}
+      />
+      <InfoModal
+        visible={infoModalVisible}
+        onClose={() => setInfoModalVisible(false)}
+        type={infoModalType}
       />
     </>
   );
